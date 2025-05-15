@@ -8,9 +8,25 @@ export default class OrganizationController {
     try {
         const orgData = req.body;
         const orgaization = await this.orgService.addOrganization(orgData)
-      res.status(201).json({ data: orgaization, message: 'signup' });
+      res.status(201).json({ data: orgaization, message: 'Organization created successfully' });
     } catch (error) {
       next(error);
     }
   };
+
+  public deleteOrganization = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const orgData = req.body;
+      const organization = await this.orgService.deleteOrganization(orgData);
+  
+      if (organization) {
+        res.status(200).json({ data: organization, message: 'Organization deleted successfully' });
+      } else {
+        res.status(404).json({ message: 'Organization not found' });
+      }
+    } catch (error) {
+      next(error);
+    }
+  };
+  
 }

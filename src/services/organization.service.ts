@@ -11,7 +11,7 @@ export default class OrganizationService {
             {
                 orgName: orgData.orgName,
             },
-            raw: true,
+            raw: true, // Returns plain JavaScript object
         });
 
         if(org) {
@@ -22,5 +22,20 @@ export default class OrganizationService {
         }
         return org;
       }
+      public async deleteOrganization(orgData: IOrganization): Promise<IOrganization | null> {
+        const org = await this.orgModel.findOne({
+            where: {
+                orgName: orgData.orgName,
+            },
+            raw: false, // Needed to call `destroy()` on instance
+        });
     
-}
+        if (org) {
+            await org.destroy(); // Deletes the record
+            return org.toJSON() as IOrganization; // return deleted org data
+        } else {
+            return null; // Or throw an error if you prefer
+        }
+    }
+    
+}// Returns Sequelize model instance// Returns Sequelize model instance
