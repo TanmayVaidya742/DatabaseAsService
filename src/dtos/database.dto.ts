@@ -1,13 +1,6 @@
-import { Request } from 'express';
+// dtos/database.dto.ts
 
-export interface RequestWithUser extends Request {
-  user: {
-    userId: string;
-    orgId?: string;
-    unitId?: string;
-    // add more fields as needed
-  };
-}
+import { Request } from 'express';
 
 export interface CreateDatabaseRequest {
   databaseName: string;
@@ -18,20 +11,26 @@ export interface CreateTableRequest {
   columns: TableColumn[];
 }
 
+export interface UpdateTableRequest {
+  addColumns?: TableColumn[];
+  removeColumns?: string[];
+}
+
 export interface TableColumn {
   name: string;
   type: string;
   isPrimaryKey?: boolean;
   isNotNull?: boolean;
   isUnique?: boolean;
-  default?: any;
+  default?: string;
   foreignKey?: {
     table: string;
     column: string;
   };
 }
 
-export interface UpdateTableRequest {
-  addColumns?: TableColumn[];
-  removeColumns?: string[];
+export interface RequestWithUser extends Request {
+  user: {
+    userId: string;
+  };
 }
