@@ -17,6 +17,7 @@ class OrgsRoute implements Routes {
 
   private initializeRoutes() {
     this.router.post(`${this.path}/add-org`, this.orgController.createOrganization);
+    this.router.delete(`${this.path}/delete-org`, this.orgController.deleteOrganization);
   }
 }
 
