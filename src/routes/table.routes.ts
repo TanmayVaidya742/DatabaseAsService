@@ -12,8 +12,11 @@ class TableRoute implements Routes {
   }
 
   private initializeRoutes() {
-    this.router.get(`${this.path}`, this.tableController.getTables);
-    this.router.post(`${this.path}`, this.tableController.createTable);
+    // this.router.get(`${this.path}`, this.tableController.getTables);
+    this.router.get(`${this.path}/:dbName`, this.tableController.getTables);
+    // this.router.post(`${this.path}`, this.tableController.createTable);
+    this.router.post(`${this.path}/:dbName`, this.tableController.createTable);
+
   }
 }
 

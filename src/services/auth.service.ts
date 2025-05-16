@@ -7,9 +7,10 @@ import { DataStoredInToken, TokenData } from '@interfaces/auth.interface';
 import { IUser } from '@interfaces/users.interface';
 import userModel from '@models/users.model';
 import { isEmpty } from '@utils/util';
+import { DB } from '@/databases';
 
 class AuthService {
-  public users = userModel;
+  public users = DB.UserModel
 
   public async signup(userData: CreateUserDto): Promise<IUser> {
     if (isEmpty(userData)) throw new HttpException(400, "userData is empty");
@@ -26,11 +27,12 @@ class AuthService {
   public async login(userData: CreateUserDto): Promise<{ cookie: string; findUser: IUser }> {
     if (isEmpty(userData)) throw new HttpException(400, "userData is empty");
 
-    const findUser: IUser = await this.users.findOne({ email: userData.email });
+    const findUser: IUser = await this.users.findOne({ where : {email: userData.email} });
     if (!findUser) throw new HttpException(409, `This email ${userData.email} was not found`);
 
-    const isPasswordMatching: boolean = await compare(userData.password, findUser.password);
-    if (!isPasswordMatching) throw new HttpException(409, "Password is not matching");
+    if(userData.password !== findUser.password){
+      throw new HttpException(400, "Password did not match")
+    }
 
     const tokenData = this.createToken(findUser);
     const cookie = this.createCookie(tokenData);

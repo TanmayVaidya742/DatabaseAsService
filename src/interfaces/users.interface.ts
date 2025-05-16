@@ -8,4 +8,7 @@ export interface IUser {
   email: string;
   createdAt: Date;
   updatedAt: Date;
+  password?:string;
+  userType?:string;
+
 }

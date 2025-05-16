@@ -9,6 +9,8 @@ export class UserModel extends Model<IUser> implements IUser {
   public lastName: string;
   public status: string;
   public email: string;
+  public password: string;
+  public userType: string;
   public createdAt: Date;
   public updatedAt: Date;
 }
@@ -50,6 +52,20 @@ export default function (sequelize: Sequelize): typeof UserModel {
       status: {
         type: DataTypes.STRING,
         field:"status",
+        allowNull:false
+
+
+      },
+      password: {
+        type: DataTypes.STRING,
+        field:"password",
+        allowNull:false
+
+
+      },
+      userType: {
+        type: DataTypes.STRING,
+        field:"userType",
         allowNull:false
 
 
