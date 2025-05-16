@@ -1,8 +1,7 @@
 import { DB_DATABASE, DB_HOST, DB_PASSWORD, DB_PORT, DB_USER, NODE_ENV } from '@/config';
 import organizationModel from '@/models/organization.model';
-import { UserModel } from '@/models/users.model';
+import usersModel, { UserModel } from '@/models/users.model';
 
-import initUserModel from '@/models/users.model';  // Note the different import name
 
 import { Sequelize } from 'sequelize';
 async function createDatabaseIfNotExists() {
@@ -62,7 +61,7 @@ export const sequelize = new Sequelize(DB_DATABASE!, DB_USER!, DB_PASSWORD!, {
 
 export const DB = {
   OrganizationModel :organizationModel(sequelize),
-    UserModel: initUserModel(sequelize),  // Now this will work
+    UserModel: usersModel(sequelize),  // Now this will work
 
     sequelize,
     Sequelize,
