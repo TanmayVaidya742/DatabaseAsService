@@ -1,41 +1,78 @@
 import { DB } from "@/databases";
-import { IOrganization } from "@/interfaces/organization.interface";
+import { IOrganization, IOrganizationPayload } from "@/interfaces/organization.interface";
+import UserService from "./users.service";
+import bcrypt from 'bcrypt';
 
 export default class OrganizationService {
-
     public orgModel = DB.OrganizationModel;
-      public async addOrganization(orgData: IOrganization): Promise<IOrganization> {
-        let org :IOrganization;
-         org = await this.orgModel.findOne({
-            where: 
-            {
+    private userService = new UserService();
+
+    public async addOrganization(orgData: IOrganizationPayload): Promise<IOrganization> {
+        let org: IOrganization;
+
+        console.log(orgData)
+
+        const orgDetails = {
+            orgName: orgData.orgName,
+            domain: orgData.domain,
+        };
+
+        // Ensure password exists before hashing
+        if (!orgData.password) {
+            throw new Error("Password is required");
+        }
+
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(orgData.password, saltRounds);
+
+        org = await this.orgModel.findOne({
+            where: {
                 orgName: orgData.orgName,
+                domain : orgData.domain
             },
-            raw: true, // Returns plain JavaScript object
+            raw: true,  
         });
 
-        if(org) {
+        if (org) {
             return org;
-        }
-        else {
+        } else {
             org = await this.orgModel.create(orgData);
         }
+
+        const orgUserDetails = {
+            orgId: org.orgId,
+            firstName: orgData.firstName,
+            lastName: orgData.lastName,
+            email: orgData.email,
+            userType: 'superadmin',
+            status: 'active',
+            password: hashedPassword,
+        };
+
+        await this.userService.addUsers(orgUserDetails);
         return org;
-      }
-      public async deleteOrganization(orgData: IOrganization): Promise<IOrganization | null> {
+    }
+
+    public async deleteOrganization(orgData: IOrganization): Promise<IOrganization | null> {
         const org = await this.orgModel.findOne({
             where: {
                 orgName: orgData.orgName,
             },
-            raw: false, // Needed to call `destroy()` on instance
+            raw: false,
         });
-    
+
         if (org) {
-            await org.destroy(); // Deletes the record
-            return org.toJSON() as IOrganization; // return deleted org data
+            await org.destroy();
+            return org.toJSON() as IOrganization;
         } else {
-            return null; // Or throw an error if you prefer
+            return null;
         }
     }
-    
-}// Returns Sequelize model instance// Returns Sequelize model instance
+
+    // In your organization.service.ts
+public async findAllOrganizations(): Promise<IOrganization[]> {
+  return this.orgModel.findAll({
+    raw: true,
+  });
+}
+}

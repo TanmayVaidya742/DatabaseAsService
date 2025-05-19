@@ -28,5 +28,15 @@ export default class OrganizationController {
       next(error);
     }
   };
+
+  // In your organization.controller.ts
+public getOrganizations = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const organizations = await this.orgService.findAllOrganizations();
+    res.status(200).json({ data: organizations, message: 'Organizations retrieved successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
   
 }

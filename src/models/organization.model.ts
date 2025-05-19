@@ -22,7 +22,6 @@ export default function (sequelize: Sequelize): typeof OrganizationModel {
       },
       domain: {
         type: DataTypes.STRING,
-        
         defaultValue: DataTypes.UUIDV4,
         field:"domain",
 

@@ -1,13 +1,13 @@
 export interface IUser {
-  userId: string;
+  userId?: string;
   orgId: string;
-  unitId: string;
+  unitId?: string;
   firstName: string;
   lastName: string;
   status: string;
   email: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
   password?:string;
   userType?:string;
 

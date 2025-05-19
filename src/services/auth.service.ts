@@ -30,10 +30,7 @@ class AuthService {
     const findUser: IUser = await this.users.findOne({ where : {email: userData.email} });
     if (!findUser) throw new HttpException(409, `This email ${userData.email} was not found`);
 
-    if(userData.password !== findUser.password){
-      throw new HttpException(400, "Password did not match")
-    }
-
+    const checkIfPasswordIsValid = await compare(userData.password, findUser.password)
     const tokenData = this.createToken(findUser);
     const cookie = this.createCookie(tokenData);
 
