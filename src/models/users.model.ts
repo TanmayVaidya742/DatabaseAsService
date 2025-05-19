@@ -4,7 +4,7 @@ import { DataTypes, Model, Optional, Sequelize } from 'sequelize';
 export class UserModel extends Model<IUser> implements IUser {
   public userId: string;
   public orgId: string;
-  public unitId: string;
+  public unitId?: string;
   public firstName: string;
   public lastName: string;
   public status: string;
@@ -20,7 +20,9 @@ export default function (sequelize: Sequelize): typeof UserModel {
     {
       userId:{
         type:DataTypes.UUID,
+        field:"userId",
         primaryKey:true,
+        defaultValue:DataTypes.UUIDV4
       },
 
       orgId: {
@@ -34,8 +36,7 @@ export default function (sequelize: Sequelize): typeof UserModel {
       unitId: {
         type: DataTypes.UUID,
         field:"unitId",
-        allowNull:false,
-
+        allowNull:true,
       },
       firstName: {
         type: DataTypes.STRING,

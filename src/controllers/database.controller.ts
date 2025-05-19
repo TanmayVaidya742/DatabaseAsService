@@ -32,9 +32,9 @@ export class DatabaseController {
   // };
 
 async createDatabase(req: Request, res: Response) {
-    const { name } = req.body;
+    const { databaseName } = req.body;
 
-    if (!name) {
+    if (!databaseName) {
       return res.status(400).json({ success: false, message: 'Database name is required' });
     }
 
@@ -51,7 +51,7 @@ async createDatabase(req: Request, res: Response) {
       await client.connect();
 
       // Sanitize DB name to prevent SQL injection
-      const dbName = name.replace(/[^a-zA-Z0-9_]/g, '_');
+      const dbName = databaseName.replace(/[^a-zA-Z0-9_]/g, '_');
 
       await client.query(`CREATE DATABASE "${dbName}"`);
       await client.end();
