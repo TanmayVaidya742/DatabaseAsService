@@ -1,37 +1,61 @@
+// interfaces/table.interface.ts
+import { Multer } from 'multer';
+
 export interface ITable {
-  name: string;
-  databaseName: string;
-  schema: {
-    columns: {
-      name: string;
-      type: string; // PostgreSQL specific types
-      constraints?: string[];
-    }[];
-  };
+  tableId: string;
+  tableName: string;
+  orgId: string;
+  userId: string;
+  unitId?: string;
+  dbId: string;
+  schema: [];
   createdAt: Date;
   updatedAt: Date;
+  isPyramidDocument: boolean;
 }
 
-export interface CreateTableDto {
+
+
+export interface ITableCreateRequest {
+  tableName: string;
+  columns?: IColumn[] | string; // Can be array or JSON string
+  csvFile?: Express.Multer.File;
+}
+
+export interface ITableUpdateRequest {
+  columns: IColumn[];
+}
+
+// export interface ITableResponse {
+//   message: string;
+//   dbId?: string;
+//   schema?: Record<string, string>;
+//   tableId?: string;
+// }
+
+// export interface ITableError {
+//   error: string;
+//   details?: string;
+// }
+
+// interfaces/table.interface.ts
+export interface IColumn {
   name: string;
-  columns: {
-    name: string;
-    type: string;
-    constraints?: string[];
-  }[];
+  type: string;
+  isNullable?: boolean;
+
+  isUnique: boolean;
+  isPrimaryKey: boolean;
+  defaultValue?: string;
+  columnDefault?: string | null;
 }
 
-export interface UpdateTableDto {
-  columns?: {
-    name: string;
-    type: string;
-    constraints?: string[];
-  }[];
-  newName?: string;
+export interface ITableResponse {
+  message: string;
+  schema?: Record<string, string>;
 }
 
-export interface TableDataQuery {
-  limit?: number;
-  offset?: number;
-  where?: Record<string, any>;
+export interface ITableError {
+  error: string;
+  details?: string;
 }

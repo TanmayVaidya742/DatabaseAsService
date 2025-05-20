@@ -1,10 +1,22 @@
 import { DB_DATABASE, DB_HOST, DB_PASSWORD, DB_PORT, DB_USER, NODE_ENV } from '@/config';
 import databaseCollectionModel from '@/models/databaseCollection.model';
 import organizationModel from '@/models/organization.model';
+import tableModel from '@/models/table.model';
 import usersModel, { UserModel } from '@/models/users.model';
 
 
 import { Sequelize } from 'sequelize';
+
+export async function createSequelizeInstance(dbname) {
+  return new Sequelize(dbname, DB_USER, DB_PASSWORD, {
+    host: DB_HOST,
+    port: Number(process.env.DB_PORT),
+    dialect: 'postgres',
+    logging: false, // optional
+  });
+}
+
+
 async function createDatabaseIfNotExists() {
     // Create a temporary connection to postgres to create database
     const tempSequelize = new Sequelize('postgres', process.env.DB_USER!, process.env.DB_PASSWORD!, {
@@ -64,6 +76,7 @@ export const DB = {
   OrganizationModel :organizationModel(sequelize),
     UserModel: usersModel(sequelize),  // Now this will work
     DatabaseCollectionModel: databaseCollectionModel(sequelize),
+    TableModel :tableModel(sequelize),
 
     sequelize,
     Sequelize,
@@ -79,7 +92,7 @@ async function initializeDatabase() {
         console.log('Database connection established successfully.');
 
         // Sync all models with the database
-         //await sequelize.sync({ alter: true });
+        //  await sequelize.sync({ alter: true });
         console.log('Database models synchronized successfully.');
     } catch (error) {
         console.error('Unable to connect to or sync the database:', error);
