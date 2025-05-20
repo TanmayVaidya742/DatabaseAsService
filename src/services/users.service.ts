@@ -15,7 +15,7 @@ export default class UserService {
 
   public async getAllUsers(options?: FindOptions<IUser>): Promise<IUser[]> {
     const users = await this.userModel.findAll(options);
-    return users.map(user => user.toJSON() as IUser);
+    return users;
   }
 
 
