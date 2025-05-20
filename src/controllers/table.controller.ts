@@ -1,133 +1,86 @@
-import { Request, Response, NextFunction } from 'express';
-import { CreateTableDto, UpdateTableDto, TableDataQuery } from '../interfaces/table.interface';
+// controllers/table.controller.ts
 import { TableModel } from '../models/table.model';
+import { IColumn, ITableResponse } from '../interfaces/table.interface';
+import { Request, Response, NextFunction } from 'express';
+import { RequestWithUser } from '@/interfaces/auth.interface';
+import { TableService } from '@/services/table.service';
 
 export class TableController {
-  private tableModel = TableModel.getInstance();
+  private tableService = new TableService();
 
-  public createTable = async (req: Request, res: Response, next: NextFunction) => {
+  public getAllTables = async (req: RequestWithUser, res: Response, next: NextFunction) => {
+    //  const { tableName, columns, dbId } = req.body;
+    const { dbId } = req.params;
+    const { orgId } = req.user;
+    
+    const tableData = await this.tableService.getTables(dbId,orgId);
+    return  res.status(200).json(tableData);
+
+  }
+
+  public createTable = async (req: RequestWithUser, res: Response, next: NextFunction) => {
+    const { tableName, columns, dbId } = req.body;
+    const { dbName } = req.params;
+    const { orgId, userId } = req.user;
+
+    if (!dbName || !tableName || !columns) {
+      return res.status(400).json({
+        error: 'Validation error',
+        details: 'Database name, table name, and schema are required',
+      });
+    }
+
     try {
-      const { dbName } = req.params;
-      const tableData: CreateTableDto = req.body;
-      
-      // Validate input
-      if (!tableData.name || !tableData.columns || tableData.columns.length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'Table name and at least one column are required'
-        });
+      const result = await this.tableService.createTable(orgId, dbId, dbName, tableName, userId, columns);
+
+      res.status(201).json(result);
+    } catch (error) {
+      console.error('Error creating table:', error);
+      res.status(500).json({
+        error: 'Internal server error',
+        details: 'Failed to create table',
+      });
+    }
+  };
+
+  public async getTableSchema(req: RequestWithUser, res: Response, next: NextFunction) {
+    const { dbName, tableName } = req.params;
+
+    try {
+      const result = await this.tableModel.getTableSchema(dbName, tableName);
+
+      if ('error' in result) {
+        return res.status(404).json(result);
       }
 
-      const newTable = await this.tableModel.create(dbName, tableData);
-      
-      res.status(201).json({
-        success: true,
-        data: newTable,
-        message: 'Table created successfully'
-      });
+      res.json(result);
     } catch (error) {
-      next(error);
-    }
-  };
-
-  public getTables = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { dbName } = req.params;
-      const tables = await this.tableModel.findAllInDatabase(dbName);
-      
-      res.status(200).json({
-        success: true,
-        data: tables,
-        count: tables.length
+      console.error('Error fetching table schema:', error);
+      res.status(500).json({
+        error: 'Internal server error',
+        details: 'Failed to fetch table schema',
       });
-    } catch (error) {
-      next(error);
     }
-  };
+  }
 
-  public getTable = async (req: Request, res: Response, next: NextFunction) => {
+  public async updateTableSchema(req: RequestWithUser, res: Response, next: NextFunction) {
+    const { dbName, tableName } = req.params;
+    const { schema } = req.body;
+
     try {
-      const { dbName, tableName } = req.params;
-      const table = await this.tableModel.findOne(dbName, tableName);
-      
-      if (!table) {
-        return res.status(404).json({
-          success: false,
-          message: 'Table not found'
-        });
+      const result = await this.tableModel.updateTableSchema(dbName, tableName, schema);
+
+      if ('error' in result) {
+        return res.status(400).json(result);
       }
-      
-      res.status(200).json({
-        success: true,
-        data: table
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
 
-  public getTableData = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { dbName, tableName } = req.params;
-      const query: TableDataQuery = {
-        limit: req.query.limit ? parseInt(req.query.limit as string) : undefined,
-        offset: req.query.offset ? parseInt(req.query.offset as string) : undefined,
-        where: req.query.where ? JSON.parse(req.query.where as string) : undefined
-      };
-      
-      const data = await this.tableModel.getTableData(dbName, tableName, query);
-      
-      res.status(200).json({
-        success: true,
-        data
-      });
+      res.json(result);
     } catch (error) {
-      next(error);
-    }
-  };
-
-  public updateTable = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { dbName, tableName } = req.params;
-      const updateData: UpdateTableDto = req.body;
-      
-      const updatedTable = await this.tableModel.update(dbName, tableName, updateData);
-      
-      if (!updatedTable) {
-        return res.status(404).json({
-          success: false,
-          message: 'Table not found'
-        });
-      }
-      
-      res.status(200).json({
-        success: true,
-        data: updatedTable,
-        message: 'Table updated successfully'
+      console.error('Error updating table schema:', error);
+      res.status(500).json({
+        error: 'Internal server error',
+        details: 'Failed to update table schema',
       });
-    } catch (error) {
-      next(error);
     }
-  };
-
-  public deleteTable = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { dbName, tableName } = req.params;
-      const success = await this.tableModel.delete(dbName, tableName);
-      
-      if (!success) {
-        return res.status(404).json({
-          success: false,
-          message: 'Table not found'
-        });
-      }
-      
-      res.status(200).json({
-        success: true,
-        message: 'Table deleted successfully'
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+  }
 }

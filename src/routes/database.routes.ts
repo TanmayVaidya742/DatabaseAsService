@@ -71,11 +71,11 @@ export class DatabaseRoutes {
     // this.router.delete('/:dbName', this.controller.deleteDatabase.bind(this.controller));
 
     // Table operations
-    this.router.post(
-      `${this.path}/:dbName/tables`, 
-      upload.single('csvFile'), 
-      this.controller.createTable.bind(this.controller)
-    );
+    // this.router.post(
+    //   `${this.path}/:dbName/tables`, 
+    //   upload.single('csvFile'), 
+    //   this.controller.createTable.bind(this.controller)
+    // );
     // this.router.get('/:dbName/tables', this.controller.getTables.bind(this.controller));
     // this.router.delete('/:dbName/tables/:tableName', this.controller.deleteTable.bind(this.controller));
   }
