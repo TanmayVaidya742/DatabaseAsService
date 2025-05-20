@@ -2,6 +2,9 @@ import { IUser } from '@/interfaces/users.interface';
 import { DataTypes, Model, Optional, Sequelize } from 'sequelize';
 
 export class UserModel extends Model<IUser> implements IUser {
+  static findById(userId: string) {
+    throw new Error('Method not implemented.');
+  }
   public userId: string;
   public orgId: string;
   public unitId?: string;

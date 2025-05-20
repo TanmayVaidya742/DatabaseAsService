@@ -35,3 +35,21 @@ export interface CreateDatabaseDto {
   username: string;
   password: string;
 }
+
+export interface CreateTableDto {
+  tableName: string;
+  columns: TableColumn[];
+}
+
+export interface TableColumn {
+  name: string;
+  type: string;
+  isPrimaryKey?: boolean;
+  isNotNull?: boolean;
+  isUnique?: boolean;
+  default?: string;
+  foreignKey?: {
+    table: string;
+    column: string;
+  };
+}
