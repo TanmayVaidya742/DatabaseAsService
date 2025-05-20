@@ -31,7 +31,7 @@ class UsersController {
       }
       
   
-      const users = await this.userService.getAllUsers({ where });
+      const users = await this.userService.getAllUsers({ where ,raw:true });
       
       res.status(200).json({ 
         data: users,
