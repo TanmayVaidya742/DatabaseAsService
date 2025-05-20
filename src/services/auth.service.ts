@@ -27,14 +27,14 @@ class AuthService {
   public async login(userData: CreateUserDto): Promise<{ cookie: string; findUser: IUser }> {
     if (isEmpty(userData)) throw new HttpException(400, "userData is empty");
 
-    const findUser: IUser = await this.users.findOne({ where : {email: userData.email} });
+    const findUser: IUser = await this.users.findOne({ where : {email: userData.email} , raw:true});
     if (!findUser) throw new HttpException(409, `This email ${userData.email} was not found`);
 
     const checkIfPasswordIsValid = await compare(userData.password, findUser.password)
     const tokenData = this.createToken(findUser);
     const cookie = this.createCookie(tokenData);
 
-    return { cookie, findUser };
+    return { tokenData:tokenData, findUser };
   }
 
   public async logout(userData: User): Promise<User> {
@@ -47,7 +47,7 @@ class AuthService {
   }
 
   public createToken(user: User): TokenData {
-    const dataStoredInToken: DataStoredInToken = { _id: user._id };
+    const dataStoredInToken: DataStoredInToken = { _id: user.userId };
     const secretKey: string = SECRET_KEY;
     const expiresIn: number = 60 * 60;
 

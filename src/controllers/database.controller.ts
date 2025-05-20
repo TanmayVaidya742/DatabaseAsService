@@ -1,158 +1,131 @@
 import { Request, Response, NextFunction } from 'express';
-import { CreateDatabaseDto } from '../interfaces/database.interface';
-import { DatabaseModel } from '../models/database.model';
-import { Client } from 'pg';
+import { DatabaseService } from '@/services/database.service';
+import { RequestWithUser } from '@/interfaces/auth.interface';
+import multer from 'multer';
 
+// Extend the Request interface to include the file property
+declare module 'express' {
+  interface Request {
+    file?: multer.File;
+  }
+}
 
 export class DatabaseController {
-  private databaseModel = DatabaseModel.getInstance();
+  private databaseService = new DatabaseService();
 
-  // public createDatabase = async (req: Request, res: Response, next: NextFunction) => {
+  // public createDatabase = async (req: RequestWithUser, res: Response, next: NextFunction) => {
+  //   const { databaseName } = req.body;
+  //   const { userId, orgId } = req.user;
+
   //   try {
-  //     const databaseData: CreateDatabaseDto = req.body;
-      
-  //     // Validate input
-  //     if (!databaseData.name || !databaseData.host || !databaseData.username) {
-  //       return res.status(400).json({
-  //         success: false,
-  //         message: 'Name, host, and username are required'
-  //       });
-  //     }
-
-  //     const newDatabase = await this.databaseModel.create(databaseData);
-      
-  //     res.status(201).json({
-  //       success: true,
-  //       data: newDatabase,
-  //       message: 'Database created successfully'
-  //     });
+  //     const result = await this.databaseService.createDatabase(databaseName, userId, orgId);
+  //     res.status(201).json(result);
   //   } catch (error) {
-  //     next(error);
+  //     console.error('Error in createDatabase:', error);
+  //     res.status(500).json({
+  //       success: false,
+  //       message: error.message,
+  //     });
   //   }
   // };
 
-async createDatabase(req: Request, res: Response) {
-    const { databaseName } = req.body;
+  // public getDatabases = async (req: Request, res: Response, next: NextFunction) => {
+  //   try {
+  //     const result = await this.databaseService.getDatabases();
+  //     res.status(200).json(result);
+  //   } catch (error) {
+  //     console.error('Error in getDatabases:', error);
+  //     res.status(500).json({
+  //       success: false,
+  //       message: error.message,
+  //     });
+  //   }
+  // };
 
-    if (!databaseName) {
-      return res.status(400).json({ success: false, message: 'Database name is required' });
-    }
 
-    try {
-      // Connect to the default "postgres" database to issue CREATE DATABASE command
-      const client = new Client({
-        host: process.env.DB_HOST!,
-        user: process.env.DB_USER!,
-        password: process.env.DB_PASSWORD!,
-        port: Number(process.env.DB_PORT) || 5432,
-        database: 'postgres',
-      });
-
-      await client.connect();
-
-      // Sanitize DB name to prevent SQL injection
-      const dbName = databaseName.replace(/[^a-zA-Z0-9_]/g, '_');
-
-      await client.query(`CREATE DATABASE "${dbName}"`);
-      await client.end();
-
-      return res.status(201).json({ success: true, message: `Database '${dbName}' created successfully` });
-    } catch (error) {
-      console.error('Error creating database:', error);
-      return res.status(500).json({ success: false, message: 'Failed to create database', error });
-    }
-  }
-
-  public getDatabases = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const databases = await this.databaseModel.findAll();
-      
-      res.status(200).json({
-        success: true,
-        data: databases,
-        count: databases.length
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  public getDatabase = async (req: Request, res: Response, next: NextFunction) => {
-  const { dbName } = req.params;
-  if (!dbName) {
-    return res.status(400).json({ success: false, message: "Database name is required" });
-  }
+public createDatabase = async (req: RequestWithUser, res: Response, next: NextFunction) => {
+  const { databaseName } = req.body;
+  const { userId, orgId } = req.user; // Get from authenticated user
 
   try {
-    // Connect to PostgreSQL server (default 'postgres' database)
-    const client = new Client({
-      host: process.env.DB_HOST,
-      port: Number(process.env.DB_PORT) || 5432,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      database: 'postgres' // connect to default DB to check other DBs
-    });
+    if (!databaseName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Database name is required'
+      });
+    }
 
-    await client.connect();
-
-    const result = await client.query(
-      `SELECT datname FROM pg_database WHERE datname = $1`,
-      [dbName]
+    const result = await this.databaseService.createDatabase(
+      databaseName, 
+      userId, 
+      orgId
     );
 
-    await client.end();
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({ success: false, message: 'Database not found' });
-    }
-
-    // Database exists — you can send additional info if you want
-    return res.status(200).json({ success: true, data: { name: dbName } });
+    res.status(201).json(result);
   } catch (error) {
-    next(error);
+    console.error('Error in createDatabase:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to create database'
+    });
   }
 };
+  public getDatabases = async (req: RequestWithUser, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user.userId; // Get userId from authenticated user
+    const orgId = req.user.orgId;
+    const result = await this.databaseService.getDatabases(userId , orgId);
+    
+    
+    res.status(200).json({
+      success: true,
+      data: result.data,
+      count: result.count
+    });
+  } catch (error) {
+    console.error('Error in getDatabases:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+  public createTable = async (req: Request, res: Response, next: NextFunction) => {
+    const { dbName } = req.params;
+    const { tableName, columns } = req.body;
+    const csvFile = req.file;
 
-
-  // public getDatabase = async (req: Request, res: Response, next: NextFunction) => {
-  //   try {
-  //     const { dbName } = req.params;
-  //     const database = await this.databaseModel.findOne(dbName);
-      
-  //     if (!database) {
-  //       return res.status(404).json({
-  //         success: false,
-  //         message: 'Database not found'
-  //       });
-  //     }
-      
-  //     res.status(200).json({
-  //       success: true,
-  //       data: database
-  //     });
-  //   } catch (error) {
-  //     next(error);
-  //   }
-  // };
-
-  public deleteDatabase = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { dbName } = req.params;
-      const success = await this.databaseModel.delete(dbName);
-      
-      if (!success) {
-        return res.status(404).json({
-          success: false,
-          message: 'Database not found'
-        });
-      }
-      
-      res.status(200).json({
-        success: true,
-        message: 'Database deleted successfully'
-      });
+      const result = await this.databaseService.createTable(dbName, tableName, columns, csvFile);
+      res.status(201).json(result);
     } catch (error) {
-      next(error);
+      console.error('Error in createTable:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
     }
   };
+
+   public getDatabasesByDbId = async (req: RequestWithUser, res: Response, next: NextFunction) => {
+  try {
+   const dbName = req.query.dbName.toString();
+   const dbId = req.query.dbId.toString();
+
+    const result = await this.databaseService.getDatabasesByDbId(dbId , dbName);
+    
+    
+    res.status(200).json({
+      success: true,
+      data: result.data,
+      count: result.count
+    });
+  } catch (error) {
+    console.error('Error in getDatabases:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 }

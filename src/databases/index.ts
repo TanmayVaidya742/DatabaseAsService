@@ -1,4 +1,5 @@
 import { DB_DATABASE, DB_HOST, DB_PASSWORD, DB_PORT, DB_USER, NODE_ENV } from '@/config';
+import databaseCollectionModel from '@/models/databaseCollection.model';
 import organizationModel from '@/models/organization.model';
 import usersModel, { UserModel } from '@/models/users.model';
 
@@ -62,6 +63,7 @@ export const sequelize = new Sequelize(DB_DATABASE!, DB_USER!, DB_PASSWORD!, {
 export const DB = {
   OrganizationModel :organizationModel(sequelize),
     UserModel: usersModel(sequelize),  // Now this will work
+    DatabaseCollectionModel: databaseCollectionModel(sequelize),
 
     sequelize,
     Sequelize,
@@ -77,7 +79,7 @@ async function initializeDatabase() {
         console.log('Database connection established successfully.');
 
         // Sync all models with the database
-         await sequelize.sync({ alter: true });
+        //await sequelize.sync({ alter: true });
         console.log('Database models synchronized successfully.');
     } catch (error) {
         console.error('Unable to connect to or sync the database:', error);
