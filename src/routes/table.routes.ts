@@ -63,7 +63,7 @@ constructor() {
     this.tableController.createTable
   );
 
-  this.router.get(`${this.path}/:dbName/tables`,authMiddleware,this.tableController.getAllTables);
+  this.router.get(`${this.path}/:dbId/tables`,authMiddleware,this.tableController.getAllTables);
   }
 }
 export default TableRoute;
