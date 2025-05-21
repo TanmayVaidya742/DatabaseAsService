@@ -8,7 +8,7 @@ export class TableController {
   private tableService = new TableService();
 
   public getAllTables = async (req: RequestWithUser, res: Response, next: NextFunction) => {
-    const { dbId } = req.params;
+    const { dbId} = req.params;
     const { orgId } = req.user;
     
     try {
@@ -21,7 +21,9 @@ export class TableController {
         details: 'Failed to get tables',
       });
     }
-  }
+  }                                                                                                                   
+
+
 
   public createTable = async (req: RequestWithUser, res: Response, next: NextFunction) => {
     const { tableName, columns, dbId } = req.body;

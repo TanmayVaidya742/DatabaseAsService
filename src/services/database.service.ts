@@ -76,242 +76,16 @@ export class DatabaseService {
       }
 
       const message = error.message.includes('already exists') ? 'Database name already exists' : 'Failed to create database';
-
       throw new Error(message);
     } finally {
       if (tempPool) await tempPool.end();
     }
   }
 
-  // public async getDatabases(): Promise<{ success: boolean; data: any[]; count: number }> {
-  //   let client: Pool | null = null;
-  //   try {
-  //     client = await this.getTempPool();
-  //     const result = await client.query(`
-  //       SELECT datname as name
-  //       FROM pg_database
-  //       WHERE datistemplate = false
-  //       AND datname NOT IN ('postgres', 'template0', 'template1')
-  //     `);
-
-  //     return {
-  //       success: true,
-  //       data: result.rows,
-  //       count: result.rowCount,
-  //     };
-  //   } catch (error) {
-  //     console.error('Error fetching databases:', error);
-  //     throw new Error('Failed to fetch databases');
-  //   } finally {
-  //     if (client) await client.end();
-  //   }
-  // }
-
-  //   public async createDatabase(
-  //   dbName: string,
-  //   userId: string,
-  //   orgId: string
-  // ): Promise<{ success: boolean; message: string; dbId?: string; apiKey?: string }> {
-
-  //   // Validation (keep your existing validation code)
-  //   if (!dbName || !userId || !orgId) {
-  //     throw new Error('Database name, user ID, and organization ID are required');
-  //   }
-
-  //   if (!/^[a-zA-Z0-9_-]+$/.test(dbName)) {
-  //     throw new Error('Database name can only contain letters, numbers, underscores, and hyphens');
-  //   }
-
-  //   if (dbName.length > 63) {
-  //     throw new Error('Database name must be 63 characters or less');
-  //   }
-
-  //   let tempPool: Pool | null = null;
-  //   const dbId = uuidv4();
-  //   const apiKey = this.generateApiKey();
-
-  //   try {
-  //     // Connect to the default database (postgres)
-  //     tempPool = await this.getTempPool('postgres');
-
-  //     // Check/create the databases_collection table in the default database
-  //     await tempPool.query(`
-  //       CREATE TABLE IF NOT EXISTS databases_collection (
-  //         dbId VARCHAR(36) PRIMARY KEY,
-  //         dbName VARCHAR(255) NOT NULL,
-  //         userId VARCHAR(36) NOT NULL,
-  //         orgId VARCHAR(36) NOT NULL,
-  //         apiKey VARCHAR(64) NOT NULL,
-  //         createdAt TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  //         updatedAt TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-  //       )
-  //     `);
-
-  //     // First insert the record into databases_collection
-  //     await tempPool.query(
-  //       `INSERT INTO databases_collection
-  //        (dbId, dbName, userId, orgId, apiKey)
-  //        VALUES ($1, $2, $3, $4, $5)`,
-  //       [dbId, dbName, userId, orgId, apiKey]
-  //     );
-
-  //     // Then create the physical database
-  //     await tempPool.query(`CREATE DATABASE "${dbName}"`);
-
-  //     return {
-  //       success: true,
-  //       message: `Database '${dbName}' created successfully`,
-  //       dbId,
-  //       apiKey
-  //     };
-  //   } catch (error) {
-  //     console.error('Error creating database:', error);
-
-  //     // Cleanup if anything failed
-  //     if (tempPool) {
-  //       try {
-  //         // Delete the record if it was inserted
-  //         await tempPool.query(
-  //           `DELETE FROM databases_collection WHERE dbId = $1`,
-  //           [dbId]
-  //         );
-
-  //         // Terminate connections and drop the database if created
-  //         await tempPool.query(
-  //           `SELECT pg_terminate_backend(pg_stat_activity.pid)
-  //            FROM pg_stat_activity
-  //            WHERE pg_stat_activity.datname = $1
-  //            AND pid <> pg_backend_pid()`,
-  //           [dbName]
-  //         );
-  //         await tempPool.query(`DROP DATABASE IF EXISTS "${dbName}"`);
-  //       } catch (cleanupError) {
-  //         console.error('Cleanup failed:', cleanupError);
-  //       }
-  //     }
-
-  //     // Handle specific error cases
-  //     if (error.message.includes('already exists')) {
-  //       throw new Error('Database name already exists');
-  //     }
-
-  //     throw new Error('Failed to create database: ' + error.message);
-  //   } finally {
-  //     if (tempPool) await tempPool.end();
-  //   }
-  // }
-
-  // public async createDatabase(
-  //   dbName: string,
-  //   userId: string,
-  //   orgId: string
-  // ): Promise<{ success: boolean; message: string; dbId?: string; apiKey?: string }> {
-
-  //   // Validation
-  //   if (!dbName || !userId || !orgId) {
-  //     throw new Error('Database name, user ID, and organization ID are required');
-  //   }
-
-  //   if (!/^[a-zA-Z0-9_-]+$/.test(dbName)) {
-  //     throw new Error('Database name can only contain letters, numbers, underscores, and hyphens');
-  //   }
-
-  //   if (dbName.length > 63) {
-  //     throw new Error('Database name must be 63 characters or less');
-  //   }
-
-  //   let metadataPool: Pool | null = null;
-  //   let tempPool: Pool | null = null;
-  //   const dbId = uuidv4();
-  //   const apiKey = this.generateApiKey();
-
-  //   try {
-  //     // Connect to PYRAMID_DBAAS for metadata operations
-  //     metadataPool = await this.getTempPool('PYRAMID_DBAAS');
-
-  //     // Ensure the table exists in PYRAMID_DBAAS
-  //     await metadataPool.query(`
-  //       CREATE TABLE IF NOT EXISTS databases_collection (
-  //         dbId VARCHAR(36) PRIMARY KEY,
-  //         dbName VARCHAR(255) NOT NULL,
-  //         userId VARCHAR(36) NOT NULL,
-  //         orgId VARCHAR(36) NOT NULL,
-  //         apiKey VARCHAR(64) NOT NULL,
-  //         createdAt TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  //         updatedAt TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-  //       )
-  //     `);
-
-  //     // Insert metadata first
-  //     await metadataPool.query(
-  //       `INSERT INTO databases_collection
-  //        (dbId, dbName, userId, orgId, apiKey)
-  //        VALUES ($1, $2, $3, $4, $5)`,
-  //       [dbId, dbName, userId, orgId, apiKey]
-  //     );
-
-  //     // Connect to postgres to create the actual database
-  //     tempPool = await this.getTempPool();
-  //     await tempPool.query(`CREATE DATABASE "${dbName}"`);
-
-  //     return {
-  //       success: true,
-  //       message: `Database '${dbName}' created successfully`,
-  //       dbId,
-  //       apiKey
-  //     };
-  //   } catch (error) {
-  //     console.error('Error creating database:', error);
-
-  //     // Cleanup if anything failed
-  //     if (metadataPool) {
-  //       try {
-  //         // Delete the metadata record if insertion failed
-  //         await metadataPool.query(
-  //           `DELETE FROM databases_collection WHERE dbId = $1`,
-  //           [dbId]
-  //         );
-  //       } catch (cleanupError) {
-  //         console.error('Metadata cleanup failed:', cleanupError);
-  //       }
-  //     }
-
-  //     if (tempPool) {
-  //       try {
-  //         // Terminate connections and drop the database if created
-  //         await tempPool.query(
-  //           `SELECT pg_terminate_backend(pg_stat_activity.pid)
-  //            FROM pg_stat_activity
-  //            WHERE pg_stat_activity.datname = $1
-  //            AND pid <> pg_backend_pid()`,
-  //           [dbName]
-  //         );
-  //         await tempPool.query(`DROP DATABASE IF EXISTS "${dbName}"`);
-  //       } catch (cleanupError) {
-  //         console.error('Database cleanup failed:', cleanupError);
-  //       }
-  //     }
-
-  //     // Handle specific error cases
-  //     if (error.message.includes('already exists')) {
-  //       throw new Error('Database name already exists');
-  //     }
-
-  //     throw new Error('Failed to create database: ' + error.message);
-  //   } finally {
-  //     if (metadataPool) await metadataPool.end();
-  //     if (tempPool) await tempPool.end();
-  //   }
-  // }
-
   public async getDatabases(userId: string, orgId: string): Promise<{ success: boolean; data: any[]; count: number }> {
     try {
       const databaseData = await this.databaseCollectionModel.findAll({ where: { orgId, userId }, raw: true });
       const totalCount = await this.databaseCollectionModel.count({ where: { userId, orgId } });
-
-      
-        
-      
 
       return {
         success: true,
@@ -324,34 +98,57 @@ export class DatabaseService {
     }
   }
 
-  //   public async getDatabases(): Promise<{ success: boolean; data: any[]; count: number }> {
-  //   let client: Pool | null = null;
-  //   try {
-  //     client = await this.getTempPool();
-  //     const result = await client.query(`
-  //       SELECT datname as name
-  //       FROM pg_database
-  //       WHERE datistemplate = false
-  //       AND datname NOT IN ('postgres', 'template0', 'template1')
-  //     `);
+  public async getDatabasesByDbId(dbId: string, dbName: string): Promise<DatabaseAttributes> {
+    try {
+      const databaseData = await this.databaseCollectionModel.findOne({ where: { dbId, dbName }, raw: true });
+      if (!databaseData) {
+        throw new Error('Database not found');
+      }
+      return databaseData;
+    } catch (error) {
+      console.error('Error fetching database by dbId:', error);
+      throw new Error('Failed to fetch database');
+    }
+  }
 
-  //     console.log('Database query result:', result.rows); // Debug log
+  public async deleteDatabase(dbName: string, userId: string, orgId: string): Promise<{ success: boolean; message: string }> {
+    let tempPool: Pool | null = null;
+    try {
+      // Check if database exists in the collection
+      const databaseData = await this.databaseCollectionModel.findOne({ where: { dbName, userId, orgId } });
+      if (!databaseData) {
+        throw new Error('Database not found or you do not have permission to delete it');
+      }
 
-  //     return {
-  //       success: true,
-  //       data: result.rows,
-  //       count: result.rowCount,
-  //     };
-  //   } catch (error) {
-  //     console.error('Error in database service:', {
-  //       message: error.message,
-  //       stack: error.stack
-  //     });
-  //     throw error;
-  //   } finally {
-  //     if (client) await client.end();
-  //   }
-  // }
+      // Connect to the default postgres database
+      tempPool = await this.getTempPool();
+      
+      // Terminate all active connections to the database
+      await tempPool.query(
+        `SELECT pg_terminate_backend(pg_stat_activity.pid)
+         FROM pg_stat_activity
+         WHERE pg_stat_activity.datname = $1
+         AND pid <> pg_backend_pid();`,
+        [dbName]
+      );
+
+      // Drop the database
+      await tempPool.query(`DROP DATABASE IF EXISTS ${dbName}`);
+
+      // Delete the database record from the collection
+      await this.databaseCollectionModel.destroy({ where: { dbName, userId, orgId } });
+
+      return {
+        success: true,
+        message: `Database '${dbName}' deleted successfully`,
+      };
+    } catch (error) {
+      console.error('Error deleting database:', error);
+      throw new Error(error.message.includes('does not exist') ? 'Database does not exist' : 'Failed to delete database');
+    } finally {
+      if (tempPool) await tempPool.end();
+    }
+  }
 
   public async createTable(
     dbName: string,
@@ -407,18 +204,5 @@ export class DatabaseService {
         }
       }
     }
-  };
-
-
-    public async getDatabasesByDbId(dbId: string, dbName: string): Promise<DatabaseAttributes> {
-    try {
-      const databaseData = await this.databaseCollectionModel.findOne({ where: { dbId, dbName }, raw: true });
-      return databaseData;
-     
-    } catch (error) {
-      console.error('Error fetching databases:', error);
-      throw new Error('Failed to fetch databases');
-    }
   }
-
 }
