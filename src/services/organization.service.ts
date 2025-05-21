@@ -44,7 +44,7 @@ export default class OrganizationService {
             firstName: orgData.firstName,
             lastName: orgData.lastName,
             email: orgData.email,
-            userType: 'superadmin',
+            userType: 'user',
             status: 'active',
             password: hashedPassword,
         };
