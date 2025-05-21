@@ -20,8 +20,8 @@ export class TableService {
     csvFile?: Express.Multer.File,
   ): Promise<ITable> {
     try {
-      const mapDataType = type => {
-        const map = {
+      const mapDataType = (type: string) => {
+        const map: Record<string, any> = {
           STRING: DataTypes.STRING,
           INTEGER: DataTypes.INTEGER,
           BOOLEAN: DataTypes.BOOLEAN,
@@ -33,16 +33,21 @@ export class TableService {
         };
         return map[type.toUpperCase()];
       };
-      const sequelize = await createSequelizeInstance(dbName);
-      const schema = JSON.parse(columns)
 
-      const schemaStructure = {};
+      if (!columns) {
+        throw new Error('Schema definition is required');
+      }
+
+      const sequelize = await createSequelizeInstance(dbName);
+      const schema = JSON.parse(columns);
+
+      const schemaStructure: Record<string, any> = {};
       for (const field of schema) {
         schemaStructure[field.name] = {
           type: mapDataType(field.type),
           allowNull: field.isNullable ?? true,
           unique: field.isUnique ?? false,
-          primaryKey: field.isPrimaryKey ?? false,
+          primaryKey: field.isPrimary ?? false,
           defaultValue: field.defaultValue || undefined,
         };
       }
@@ -50,29 +55,34 @@ export class TableService {
       const DynamicModel = sequelize.define(tableName, schemaStructure, {
         freezeTableName: true, // so Sequelize doesn't pluralize
       });
+      
       await sequelize.authenticate();
       await DynamicModel.sync({ force: false }); // Set `force: true` to recreate
       console.log(`Table '${tableName}' created successfully in DB '${dbName}'`);
 
-      let tablePayload = {
+      // Create table metadata
+      const tablePayload = {
         orgId,
         dbId,
         dbName,
         tableName,
         userId,
-        schema:columns,
+        schema: columns, // This should be string as defined in the interface
+        isPyramidDocument: false, // Adding required field
       };
+
       const createTableMetaData = await this.tableModel.create(tablePayload);
       return createTableMetaData;
     } catch (error) {
-        throw error;
+      throw error;
     }
   }
 
-   public async getTables(dbId: string, orgId: string): Promise<Array<ITable>>{
-        const tableData = await this.tableModel.findAll({where:{dbId,orgId}});
-        return tableData;
-   }
+  public async getTables(dbId: string, orgId: string): Promise<Array<ITable>> {
+    const tableData = await this.tableModel.findAll({ where: { dbId, orgId } });
+    return tableData;
+  }
+
 
   // ... other methods remain similar but with consistent naming ...
 }
