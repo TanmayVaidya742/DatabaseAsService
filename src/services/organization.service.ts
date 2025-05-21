@@ -10,14 +10,13 @@ export default class OrganizationService {
     public async addOrganization(orgData: IOrganizationPayload): Promise<IOrganization> {
         let org: IOrganization;
 
-        console.log(orgData)
+        console.log(orgData);
 
         const orgDetails = {
             orgName: orgData.orgName,
             domain: orgData.domain,
         };
 
-        // Ensure password exists before hashing
         if (!orgData.password) {
             throw new Error("Password is required");
         }
@@ -28,9 +27,9 @@ export default class OrganizationService {
         org = await this.orgModel.findOne({
             where: {
                 orgName: orgData.orgName,
-                domain : orgData.domain
+                domain: orgData.domain
             },
-            raw: true,  
+            raw: true,
         });
 
         if (org) {
@@ -69,10 +68,19 @@ export default class OrganizationService {
         }
     }
 
-    // In your organization.service.ts
-public async findAllOrganizations(): Promise<IOrganization[]> {
-  return this.orgModel.findAll({
-    raw: true,
-  });
-}
+    public async findAllOrganizations(): Promise<IOrganization[]> {
+        return this.orgModel.findAll({
+            raw: true,
+        });
+    }
+
+    public async findOrganizationByName(orgName: string): Promise<IOrganization | null> {
+        const organization = await this.orgModel.findOne({
+            where: {
+                orgName: orgName,
+            },
+            raw: true,
+        });
+        return organization;
+    }
 }
