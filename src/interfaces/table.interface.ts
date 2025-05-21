@@ -43,11 +43,25 @@ export interface IColumn {
   name: string;
   type: string;
   isNullable?: boolean;
-
   isUnique: boolean;
   isPrimaryKey: boolean;
   defaultValue?: string;
   columnDefault?: string | null;
+}
+
+export interface ITableResponse {
+  message: string;
+  schema?: Record<string, string>;
+}
+
+export interface ITableError {
+  error: string;
+  details?: string;
+}
+
+
+export interface ITableUpdateRequest {
+  columns: IColumn[];
 }
 
 export interface ITableResponse {

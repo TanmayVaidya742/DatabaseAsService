@@ -1,5 +1,4 @@
 // controllers/table.controller.ts
-import { TableModel } from '../models/table.model';
 import { IColumn, ITableResponse } from '../interfaces/table.interface';
 import { Request, Response, NextFunction } from 'express';
 import { RequestWithUser } from '@/interfaces/auth.interface';
@@ -9,13 +8,19 @@ export class TableController {
   private tableService = new TableService();
 
   public getAllTables = async (req: RequestWithUser, res: Response, next: NextFunction) => {
-    //  const { tableName, columns, dbId } = req.body;
     const { dbId } = req.params;
     const { orgId } = req.user;
     
-    const tableData = await this.tableService.getTables(dbId,orgId);
-    return  res.status(200).json(tableData);
-
+    try {
+      const tableData = await this.tableService.getTables(dbId, orgId);
+      return res.status(200).json(tableData);
+    } catch (error) {
+      console.error('Error getting tables:', error);
+      return res.status(500).json({
+        error: 'Internal server error',
+        details: 'Failed to get tables',
+      });
+    }
   }
 
   public createTable = async (req: RequestWithUser, res: Response, next: NextFunction) => {
@@ -31,25 +36,32 @@ export class TableController {
     }
 
     try {
-      const result = await this.tableService.createTable(orgId, dbId, dbName, tableName, userId, columns);
-
+      const result = await this.tableService.createTable(
+        orgId, 
+        dbId, 
+        dbName, 
+        tableName, 
+        userId, 
+        columns,
+        req.file // Pass the uploaded file if exists
+      );
       res.status(201).json(result);
     } catch (error) {
       console.error('Error creating table:', error);
       res.status(500).json({
         error: 'Internal server error',
-        details: 'Failed to create table',
+        details: error.message || 'Failed to create table',
       });
     }
   };
 
-  public async getTableSchema(req: RequestWithUser, res: Response, next: NextFunction) {
+  public getTableSchema = async (req: RequestWithUser, res: Response, next: NextFunction) => {
     const { dbName, tableName } = req.params;
 
     try {
-      const result = await this.tableModel.getTableSchema(dbName, tableName);
-
-      if ('error' in result) {
+      const result = await this.tableService.getTableSchema(dbName, tableName);
+      
+      if (result && 'error' in result) {
         return res.status(404).json(result);
       }
 
@@ -61,16 +73,16 @@ export class TableController {
         details: 'Failed to fetch table schema',
       });
     }
-  }
+  };
 
-  public async updateTableSchema(req: RequestWithUser, res: Response, next: NextFunction) {
+  public updateTableSchema = async (req: RequestWithUser, res: Response, next: NextFunction) => {
     const { dbName, tableName } = req.params;
     const { schema } = req.body;
 
     try {
-      const result = await this.tableModel.updateTableSchema(dbName, tableName, schema);
-
-      if ('error' in result) {
+      const result = await this.tableService.updateTableSchema(dbName, tableName, schema);
+      
+      if (result && 'error' in result) {
         return res.status(400).json(result);
       }
 
@@ -82,5 +94,5 @@ export class TableController {
         details: 'Failed to update table schema',
       });
     }
-  }
+  };
 }
