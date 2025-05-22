@@ -67,7 +67,22 @@ class TableRoute implements Routes {
 
   this.router.delete(`${this.path}/:dbId/tables/:tableName`, authMiddleware, this.tableController.deleteTable);
 
+
+
+  this.router.put(
+      `${this.path}/:dbName/tables/:tableName`,
+      authMiddleware,
+      this.tableController.updateTable
+    );
+
+    // In table.routes.ts
+this.router.get(
+  `${this.path}/:dbName/tables/:tableName/columns`,
+  authMiddleware,
+  this.tableController.getTableColumns
+);
   }
+  
 }
 
 export default TableRoute;

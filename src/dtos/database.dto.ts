@@ -19,7 +19,7 @@ export interface UpdateTableRequest {
 export interface TableColumn {
   name: string;
   type: string;
-  isPrimaryKey?: boolean;
+  primaryKey?: boolean;
   isNotNull?: boolean;
   isUnique?: boolean;
   default?: string;

@@ -58,46 +58,82 @@ export class TableController {
     }
   };
 
-  public getTableSchema = async (req: RequestWithUser, res: Response, next: NextFunction) => {
+ public updateTable = async (req: RequestWithUser, res: Response, next: NextFunction) => {
     const { dbName, tableName } = req.params;
+    const dbId = req.query.dbId.toString();
+    const { columns } = req.body;
+    const { orgId, userId } = req.user;
+
+    if (!dbName || !tableName || !columns || !dbId) {
+      return res.status(400).json({
+        error: 'Validation error',
+        details: 'Database name, table name, database ID, and schema are required',
+      });
+    }
 
     try {
-      const result = await this.tableService.getTableSchema(dbName, tableName);
+      const result = await this.tableService.updateTable(
+        orgId, 
+        dbId, 
+        dbName, 
+        tableName, 
+        userId, 
+        columns
+      );
       
+      // Check if there was an error
       if (result && 'error' in result) {
-        return res.status(404).json(result);
+        const statusCode = result.error === 'Not found' ? 404 : 400;
+        return res.status(statusCode).json(result);
       }
 
-      res.json(result);
+      res.status(200).json(result);
     } catch (error) {
-      console.error('Error fetching table schema:', error);
+      console.error('Error updating table:', error);
       res.status(500).json({
         error: 'Internal server error',
-        details: 'Failed to fetch table schema',
+        details: error.message || 'Failed to update table',
       });
     }
   };
 
-  public updateTableSchema = async (req: RequestWithUser, res: Response, next: NextFunction) => {
-    const { dbName, tableName } = req.params;
-    const { schema } = req.body;
+  // In table.controller.ts
+  // public getTableColumns = async (req: RequestWithUser, res: Response, next: NextFunction) => {
+  // const { dbName, tableName } = req.params;
+  // const { orgId } = req.user;
+  // const { schema } = req.body;
 
-    try {
-      const result = await this.tableService.updateTableSchema(dbName, tableName, schema);
+  //   try {
+  //     const result = await this.tableService.updateTableSchema(dbName, tableName, schema);
       
-      if (result && 'error' in result) {
-        return res.status(400).json(result);
-      }
+  //     if (result && 'error' in result) {
+  //       return res.status(400).json(result);
+  //     }
 
-      res.json(result);
-    } catch (error) {
-      console.error('Error updating table schema:', error);
-      res.status(500).json({
-        error: 'Internal server error',
-        details: 'Failed to update table schema',
-      });
-    }
-  };
+  //     res.json(result);
+  //   } catch (error) {
+  //     console.error('Error updating table schema:', error);
+  //     res.status(500).json({
+  //       error: 'Internal server error',
+  //       details: 'Failed to update table schema',
+  //     });
+  //   }
+  // };
+  public getTableColumns = async (req: RequestWithUser, res: Response, next: NextFunction) => {
+  const { dbName, tableName } = req.params;
+  const { orgId } = req.user;
+
+  try {
+    const columns = await this.tableService.getTableColumns(orgId, dbName, tableName);
+    res.status(200).json(columns);
+  } catch (error) {
+    console.error('Error getting table columns:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      details: error.message || 'Failed to get table columns',
+    });
+  }
+};
 
   public deleteTable = async (req: RequestWithUser, res: Response, next: NextFunction) => {
     const { dbId, tableName } = req.params;
@@ -169,4 +205,45 @@ export class TableController {
       });
     }
   }
+
+    public getTableSchema = async (req: RequestWithUser, res: Response, next: NextFunction) => {
+    const { dbName, tableName } = req.params;
+
+    try {
+      const result = await this.tableService.getTableSchema(dbName, tableName);
+      
+      if (result && 'error' in result) {
+        return res.status(404).json(result);
+      }
+
+      res.json(result);
+    } catch (error) {
+      console.error('Error fetching table schema:', error);
+      res.status(500).json({
+        error: 'Internal server error',
+        details: 'Failed to fetch table schema',
+      });
+    }
+  };
+
+   public updateTableSchema = async (req: RequestWithUser, res: Response, next: NextFunction) => {
+    const { dbName, tableName } = req.params;
+    const { schema } = req.body;
+
+    try {
+      const result = await this.tableService.updateTableSchema(dbName, tableName, schema);
+      
+      if (result && 'error' in result) {
+        return res.status(400).json(result);
+      }
+
+      res.json(result);
+    } catch (error) {
+      console.error('Error updating table schema:', error);
+      res.status(500).json({
+        error: 'Internal server error',
+        details: 'Failed to update table schema',
+      });
+    }
+  };
 }
