@@ -1,4 +1,4 @@
-// interfaces/table.interface.ts
+
 import { Multer } from 'multer';
 
 export interface ITable {
@@ -14,11 +14,9 @@ export interface ITable {
   isPyramidDocument: boolean;
 }
 
-
-
 export interface ITableCreateRequest {
   tableName: string;
-  columns?: IColumn[] | string; // Can be array or JSON string
+  columns?: IColumn[] | string;
   csvFile?: Express.Multer.File;
 }
 
@@ -26,19 +24,6 @@ export interface ITableUpdateRequest {
   columns: IColumn[];
 }
 
-// export interface ITableResponse {
-//   message: string;
-//   dbId?: string;
-//   schema?: Record<string, string>;
-//   tableId?: string;
-// }
-
-// export interface ITableError {
-//   error: string;
-//   details?: string;
-// }
-
-// interfaces/table.interface.ts
 export interface IColumn {
   name: string;
   type: string;
@@ -47,21 +32,6 @@ export interface IColumn {
   isPrimaryKey: boolean;
   defaultValue?: string;
   columnDefault?: string | null;
-}
-
-export interface ITableResponse {
-  message: string;
-  schema?: Record<string, string>;
-}
-
-export interface ITableError {
-  error: string;
-  details?: string;
-}
-
-
-export interface ITableUpdateRequest {
-  columns: IColumn[];
 }
 
 export interface ITableResponse {

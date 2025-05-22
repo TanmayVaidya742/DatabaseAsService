@@ -1,27 +1,21 @@
-// routes/table.routes.ts
 import express, { Router } from 'express';
 import multer from 'multer';
-import { Pool } from 'pg';
 import { TableController } from '../controllers/table.controller';
-import { TableModel } from '../models/table.model';
 import authMiddleware from '@/middlewares/auth.middleware';
 import path from 'path';
 import fs from 'fs';
 import { Routes } from '@/interfaces/routes.interface';
 
-// Configure upload directory
-const uploadsDir = path.join(__dirname, '../../uploads');
+const uploadsDir = path.join(__dirname, '../../Uploads');
 if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+  fs.mkdirSync(UploadsDir, { recursive: true });
 }
 
-// Configure multer storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadsDir),
   filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
 });
 
-// Create multer instance with CSV validation
 const upload = multer({ 
   storage,
   fileFilter: (req, file, cb) => {
@@ -42,28 +36,51 @@ const upload = multer({
     }
   },
   limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB limit
+    fileSize: 10 * 1024 * 1024
   }
 });
 
-class  TableRoute implements Routes{
+class TableRoute implements Routes {
   public path = "/table";
   public router = Router();
   public tableController = new TableController();
-constructor() {
+
+  constructor() {
     this.initializeRoutes();
   }
 
   private initializeRoutes() {
-  // Table operations
-  this.router.post(
-    `${this.path}/:dbName/tables`,
-    authMiddleware,
-    upload.single('csvFile'),
-    this.tableController.createTable
-  );
+    this.router.post(
+      `${this.path}/:dbName/tables`,
+      authMiddleware,
+      upload.single('csvFile'),
+      this.tableController.createTable
+    );
 
-  this.router.get(`${this.path}/:dbId/tables`,authMiddleware,this.tableController.getAllTables);
+    this.router.get(
+      `${this.path}/:dbId/tables`,
+      authMiddleware,
+      this.tableController.getAllTables
+    );
+
+    this.router.get(
+      `${this.path}/:dbName/:tableName/schema`,
+      authMiddleware,
+      this.tableController.getTableSchema
+    );
+
+    this.router.put(
+      `${this.path}/:dbName/:tableName/schema`,
+      authMiddleware,
+      this.tableController.updateTableSchema
+    );
+
+    this.router.delete(
+      `${this.path}/:dbId/tables/:tableName`,
+      authMiddleware,
+      this.tableController.deleteTable
+    );
   }
 }
+
 export default TableRoute;

@@ -1,4 +1,4 @@
-// controllers/table.controller.ts
+
 import { IColumn, ITableResponse } from '../interfaces/table.interface';
 import { Request, Response, NextFunction } from 'express';
 import { RequestWithUser } from '@/interfaces/auth.interface';
@@ -8,7 +8,7 @@ export class TableController {
   private tableService = new TableService();
 
   public getAllTables = async (req: RequestWithUser, res: Response, next: NextFunction) => {
-    const { dbId} = req.params;
+    const { dbId } = req.params;
     const { orgId } = req.user;
     
     try {
@@ -21,9 +21,7 @@ export class TableController {
         details: 'Failed to get tables',
       });
     }
-  }                                                                                                                   
-
-
+  }
 
   public createTable = async (req: RequestWithUser, res: Response, next: NextFunction) => {
     const { tableName, columns, dbId } = req.body;
@@ -45,7 +43,7 @@ export class TableController {
         tableName, 
         userId, 
         columns,
-        req.file // Pass the uploaded file if exists
+        req.file
       );
       res.status(201).json(result);
     } catch (error) {
@@ -94,6 +92,30 @@ export class TableController {
       res.status(500).json({
         error: 'Internal server error',
         details: 'Failed to update table schema',
+      });
+    }
+  };
+
+  public deleteTable = async (req: RequestWithUser, res: Response, next: NextFunction) => {
+    const { dbId, tableName } = req.params;
+    const dbName = req.query.dbName.toString();
+    const { orgId } = req.user;
+
+    try {
+      const result = await this.tableService.deleteTable(dbId, tableName, orgId, dbName);
+      
+      if (result && 'error' in result) {
+        return res.status(404).json(result);
+      }
+
+      res.status(200).json({
+        message: `Table '${tableName}' deleted successfully`,
+      });
+    } catch (error) {
+      console.error('Error deleting table:', error);
+      res.status(500).json({
+        error: 'Internal server error',
+        details: 'Failed to delete table',
       });
     }
   };

@@ -36,6 +36,24 @@ export class DatabaseService {
     });
   }
 
+  public async getTableCount(dbName: string): Promise<number> {
+    let dbPool: Pool | null = null;
+    try {
+      dbPool = await this.getTempPool(dbName);
+      const result = await dbPool.query(`
+        SELECT COUNT(*) 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public'
+      `);
+      return parseInt(result.rows[0].count, 10);
+    } catch (error) {
+      console.error(`Error fetching table count for database ${dbName}:`, error);
+      throw new Error('Failed to fetch table count');
+    } finally {
+      if (dbPool) await dbPool.end();
+    }
+  }
+
   public async createDatabase(databaseName: string, userId: string, orgId: string): Promise<{ success: boolean; message: string }> {
     if (!databaseName) {
       throw new Error('Database name is required');
@@ -87,9 +105,20 @@ export class DatabaseService {
       const databaseData = await this.databaseCollectionModel.findAll({ where: { orgId, userId }, raw: true });
       const totalCount = await this.databaseCollectionModel.count({ where: { userId, orgId } });
 
+      // Fetch table count for each database
+      const enrichedData = await Promise.all(databaseData.map(async (db) => {
+        try {
+          const tableCount = await this.getTableCount(db.dbName);
+          return { ...db, tableCount };
+        } catch (error) {
+          console.error(`Failed to fetch table count for ${db.dbName}:`, error);
+          return { ...db, tableCount: 0 }; // Fallback to 0 if table count fetch fails
+        }
+      }));
+
       return {
         success: true,
-        data: databaseData,
+        data: enrichedData,
         count: totalCount,
       };
     } catch (error) {
