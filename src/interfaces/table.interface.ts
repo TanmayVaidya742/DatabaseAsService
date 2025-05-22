@@ -14,13 +14,6 @@
 //   isPyramidDocument: boolean;
 // }
 
-// type SchemaField = {
-//   name: string;
-//   type: string;
-//   isNullable: boolean;
-//   isUnique: boolean;
-//   isPrimary: boolean;
-// };
 
 // export interface ITableCreateRequest {
 //   tableName: string;
@@ -77,11 +70,19 @@ export interface ITable {
   userId: string;
   unitId?: string;
   dbId: string;
-  schema: [];
+  schema: SchemaField[];
   createdAt: Date;
   updatedAt: Date;
   isPyramidDocument: boolean;
 }
+
+type SchemaField = {
+  name: string;
+  type: string;
+  isNullable: boolean;
+  isUnique: boolean;
+  isPrimary: boolean;
+};
 
 export interface ITableCreateRequest {
   tableName: string;

@@ -46,7 +46,7 @@ class AuthService {
     return findUser;
   }
 
-  public createToken(user: User): TokenData {
+  public createToken(user: IUser): TokenData {
     const dataStoredInToken: DataStoredInToken = { _id: user.userId };
     const secretKey: string = SECRET_KEY;
     const expiresIn: number = 60 * 60;

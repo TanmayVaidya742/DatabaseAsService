@@ -1,36 +1,42 @@
+// controllers/oData.controller.ts
 import { NextFunction, Request, Response } from 'express';
-import { WhereOptions } from 'sequelize';
-import ODataquery from '@/services/oDataquery.service';
 
-class ODataqueryController {
-  public oDataquery = new ODataquery();
+import { ODataService } from '@/services/oDataquery.service';
+
+export class ODataController {
+  private odataService = new ODataService();
 
   public getData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { dbname, tablename } = req.params;
-      const filters = req.body.filter || {};
-      
-      const result = await this.oDataquery.getData(dbname, tablename, filters);
+      const { dbName, tableName } = req.params;
+      const { $filter, $select, $orderby, $top, $skip, $count } = req.query;
+
+      const result = await this.odataService.getData(dbName, tableName, {
+        filter: $filter as string,
+        select: $select as string,
+        orderby: $orderby as string,
+        top: $top as string,
+        skip: $skip as string,
+        count: $count as string
+      });
+
       res.status(200).json({
-        message: result.data.length === 0 ? 'No matching rows found' : 'Matching rows found',
-        data: result.data,
+        '@odata.context': `$metadata#${tableName}`,
+        value: result.value,
+        ...(result.count !== undefined && { '@odata.count': result.count })
       });
     } catch (error) {
       next(error);
     }
-  }
+  };
 
   public insertData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { dbname, tablename } = req.params;
-      const data = req.body.data;
-      
-      if (!data || typeof data !== 'object' || Object.keys(data).length === 0) {
-        res.status(400).json({ error: 'Invalid or empty data object in request body' });
-        return;
-      }
+      const { dbName, tableName } = req.params;
+      const data = req.query;
 
-      const result = await this.oDataquery.insertData(dbname, tablename, data);
+      const result = await this.odataService.insertData(dbName, tableName, data);
+
       res.status(201).json({
         message: 'Row inserted successfully',
         data: result,
@@ -38,64 +44,73 @@ class ODataqueryController {
     } catch (error) {
       next(error);
     }
-  }
+  };
 
-  public updateData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ public updateData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { dbname, tablename } = req.params;
-      const { filter, data } = req.body;
-      
-      if (!filter || typeof filter !== 'object' || Object.keys(filter).length === 0) {
-        res.status(400).json({ error: 'Invalid or missing filter object' });
-        return;
-      }
+        const { dbName, tableName } = req.params;
+        const { $filter, ...updateFields } = req.query;
+        
+        if (!$filter) {
+            res.status(400).json({ error: '$filter parameter is required for updates' });
+            return;
+        }
 
-      if (!data || typeof data !== 'object' || Object.keys(data).length === 0) {
-        res.status(400).json({ error: 'Invalid or missing data object' });
-        return;
-      }
+        // Remove any OData system query options from the update fields
+        const systemOptions = ['$select', '$orderby', '$top', '$skip', '$count'];
+        const data = Object.keys(updateFields)
+            .filter(key => !systemOptions.includes(key))
+            .reduce((obj, key) => {
+                obj[key] = updateFields[key];
+                return obj;
+            }, {});
 
-      const result = await this.oDataquery.updateData(dbname, tablename, filter, data);
-      
-      if (result.length === 0) {
-        res.status(404).json({ message: 'No matching rows found to update' });
-        return;
-      }
+        if (Object.keys(data).length === 0) {
+            res.status(400).json({ error: 'No valid fields provided for update' });
+            return;
+        }
 
-      res.status(200).json({
-        message: 'Row(s) updated successfully',
-        data: result,
-      });
+        const result = await this.odataService.updateData(dbName, tableName, $filter as string, data);
+
+        res.status(200).json({
+            message: 'Row(s) updated successfully',
+            count: result.rowCount,
+            data: result.rows,
+        });
     } catch (error) {
-      next(error);
+        next(error);
     }
-  }
+};
 
   public deleteData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { dbname, tablename } = req.params;
-      const { filter } = req.body;
-      
-      if (!filter || Object.keys(filter).length === 0) {
-        res.status(400).json({ error: 'Filter object is required to delete rows' });
-        return;
-      }
+      const { dbName, tableName } = req.params;
+      const { $filter } = req.query;
 
-      const result = await this.oDataquery.deleteData(dbname, tablename, filter);
-      
-      if (result.rowCount === 0) {
-        res.status(404).json({ message: 'No matching rows found to delete' });
-        return;
-      }
+      const result = await this.odataService.deleteData(dbName, tableName, $filter as string);
 
       res.status(200).json({
-        message: 'Rows deleted successfully',
-        deleted: result.rows,
+        message: 'Row(s) deleted successfully',
+        count: result.rowCount,
+        data: result.rows,
       });
     } catch (error) {
       next(error);
     }
-  }
-}
+  };
 
-export default ODataqueryController;
+  public getMetadata = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { dbName } = req.params;
+
+      const metadata = await this.odataService.getMetadata(dbName);
+
+      res.status(200).json({
+        '@odata.context': `${req.path}/$metadata`,
+        value: metadata
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+}

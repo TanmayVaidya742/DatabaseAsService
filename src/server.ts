@@ -8,10 +8,11 @@ import OrgsRoute from './routes/org.route';
 
 import { DatabaseRoutes } from './routes/database.routes';
 import TableRoute from './routes/table.routes';
+import ODataRoute from './routes/oDataquery.routes';
 
 
 validateEnv();
 
-const app = new App([new IndexRoute(), new UsersRoute(), new AuthRoute(), new OrgsRoute(), new DatabaseRoutes(),new TableRoute()]);
+const app = new App([new IndexRoute(), new UsersRoute(), new AuthRoute(), new OrgsRoute(), new DatabaseRoutes(),new TableRoute(), new ODataRoute()]);
 
 app.listen();

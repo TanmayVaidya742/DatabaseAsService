@@ -28,7 +28,7 @@ const upload = multer({
       'text/comma-separated-values',
       'text/x-comma-separated-values'
     ];
-    
+
     if (allowedMimeTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {

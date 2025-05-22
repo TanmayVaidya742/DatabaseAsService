@@ -246,4 +246,41 @@ export class TableController {
       });
     }
   };
+
+
+
+
+
+
+  public createTableFromCSV = async (req: RequestWithUser, res: Response, next: NextFunction) => {
+  const { dbName } = req.params;
+  const { tableName } = req.body;
+  const { orgId, userId } = req.user;
+  const csvFile = req.file;
+
+  if (!dbName || !tableName || !csvFile) {
+    return res.status(400).json({
+      error: 'Validation error',
+      details: 'Database name, table name, and CSV file are required',
+    });
+  }
+
+  try {
+    const result = await this.tableService.createTableFromCSV(
+      orgId,
+      req.body.dbId,
+      dbName,
+      tableName,
+      userId,
+      csvFile
+    );
+    res.status(201).json(result);
+  } catch (error) {
+    console.error('Error creating table from CSV:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      details: error.message || 'Failed to create table from CSV',
+    });
+  }
+};
 }

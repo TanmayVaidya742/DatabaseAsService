@@ -185,6 +185,79 @@ export class TableService {
     return tableData;
   }
 
+//   public async createTableFromCSV(
+//   orgId: string,
+//   dbId: string,
+//   dbName: string,
+//   tableName: string,
+//   userId: string,
+//   csvFile: Express.Multer.File
+// ): Promise<ITable> {
+//   try {
+//     const sequelize = await createSequelizeInstance(dbName);
+    
+//     // Read CSV file and extract headers
+//     const headers = await new Promise<string[]>((resolve, reject) => {
+//       const results: string[] = [];
+//       fs.createReadStream(csvFile.path)
+//         .pipe(csv())
+//         .on('headers', (headers) => {
+//           resolve(headers);
+//         })
+//         .on('error', reject);
+//     });
+
+//     // Create schema structure from CSV headers
+//     const schemaStructure = {};
+//     const schemaColumns: IColumn[] = [];
+    
+//     headers.forEach(header => {
+//       const cleanHeader = header.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
+//       schemaStructure[cleanHeader] = {
+//         type: DataTypes.STRING,
+//         allowNull: true
+//       };
+//       schemaColumns.push({
+//         name: cleanHeader,
+//         type: 'STRING',
+//         isNullable: true,
+//         isUnique: false,
+//         isPrimaryKey: false
+//       });
+//     });
+
+//     // Create the table
+//     const DynamicModel = sequelize.define(tableName, schemaStructure, {
+//       freezeTableName: true,
+//     });
+//     await DynamicModel.sync({ force: false });
+
+//     // Create table metadata
+//     const tablePayload = {
+//       orgId,
+//       dbId,
+//       dbName,
+//       tableName,
+//       userId,
+//       schema: schemaColumns,
+//       isPyramidDocument: false
+//     };
+    
+//     const createTableMetaData = await this.tableModel.create(tablePayload);
+    
+//     // Delete the uploaded file after processing
+//     fs.unlinkSync(csvFile.path);
+    
+//     return createTableMetaData;
+//   } catch (error) {
+//     // Clean up the file if error occurs
+//     if (csvFile?.path && fs.existsSync(csvFile.path)) {
+//       fs.unlinkSync(csvFile.path);
+//     }
+//     throw error;
+//   }
+// }
+
   public async getTableSchema(dbName: string, tableName: string): Promise<ITableResponse | ITableError> {
     try {
       const sequelize = await createSequelizeInstance(dbName);
@@ -207,108 +280,108 @@ export class TableService {
     }
   }
 
-//   public async updateTableSchema(dbName: string, tableName: string, schema: IColumn[]): Promise<ITableResponse | ITableError> {
-//     try {
-//       const sequelize = await createSequelizeInstance(dbName);
-//       const queryInterface = sequelize.getQueryInterface();
+  public async updateTableSchema(dbName: string, tableName: string, schema: IColumn[]): Promise<ITableResponse | ITableError> {
+    try {
+      const sequelize = await createSequelizeInstance(dbName);
+      const queryInterface = sequelize.getQueryInterface();
       
-//       const currentSchema = await queryInterface.describeTable(tableName);
+      const currentSchema = await queryInterface.describeTable(tableName);
       
-//       if (!currentSchema) {
-//         return {
-//           error: 'Not found',
-//           details: `Table '${tableName}' not found in database '${dbName}'`,
-//         };
-//       }
+      if (!currentSchema) {
+        return {
+          error: 'Not found',
+          details: `Table '${tableName}' not found in database '${dbName}'`,
+        };
+      }
 
-//       const mapDataType = type => {
-//         const map = {
-//           STRING: DataTypes.STRING,
-//           INTEGER: DataTypes.INTEGER,
-//           BOOLEAN: DataTypes.BOOLEAN,
-//           UUID: DataTypes.UUID,
-//           DATE: DataTypes.DATE,
-//           TEXT: DataTypes.TEXT,
-//           FLOAT: DataTypes.FLOAT,
-//           DOUBLE: DataTypes.DOUBLE,
-//           BIGINT: DataTypes.BIGINT,
-//         };
-//         return map[type.toUpperCase()];
-//       };
+      const mapDataType = type => {
+        const map = {
+          STRING: DataTypes.STRING,
+          INTEGER: DataTypes.INTEGER,
+          BOOLEAN: DataTypes.BOOLEAN,
+          UUID: DataTypes.UUID,
+          DATE: DataTypes.DATE,
+          TEXT: DataTypes.TEXT,
+          FLOAT: DataTypes.FLOAT,
+          DOUBLE: DataTypes.DOUBLE,
+          BIGINT: DataTypes.BIGINT,
+        };
+        return map[type.toUpperCase()];
+      };
 
-//       for (const field of schema) {
-//         if (!currentSchema[field.name]) {
-//           await queryInterface.addColumn(tableName, field.name, {
-//             type: mapDataType(field.type),
-//             allowNull: field.isNullable ?? true,
-//             unique: field.isUnique ?? false,
-//             primaryKey: field.PrimaryKey ?? false,
-//             defaultValue: field.defaultValue || undefined,
-//           });
-//         } else {
-//           await queryInterface.changeColumn(tableName, field.name, {
-//             type: mapDataType(field.type),
-//             allowNull: field.isNullable ?? true,
-//             unique: field.isUnique ?? false,
-//             defaultValue: field.defaultValue || undefined,
-//           });
-//         }
-//       }
-//       if (!Array.isArray(schema)) {
-//   throw new Error("schema is not an array");
-// }
-
-//       await this.tableModel.update(
-//         { schema },
-//         { where: { dbName, tableName } }
-//       );
-
-//       return {
-//         message: `Schema for table '${tableName}' updated successfully`,
-//       };
-//     } catch (error) {
-//       throw new Error(`Failed to update table schema: ${error.message}`);
-//     }
-//   }
-
-private async updateTableSchema(
-  sequelize: Sequelize,
-  tableName: string,
-  newColumns: IColumn[],
-  existingColumns: any[]
-): Promise<void> {
-  const transaction = await sequelize.transaction();
-  
-  try {
-    // 1. Handle new columns
-    const columnsToAdd = newColumns.filter(newCol => 
-      !existingColumns.some(existing => existing.column_name === newCol.name)
-    );
-    
-    // 2. Handle modified columns
-    const columnsToModify = newColumns.filter(newCol => {
-      const existing = existingColumns.find(e => e.column_name === newCol.name);
-      return existing && (
-        this.shouldModifyColumnType(existing.data_type, newCol.type) ||
-        existing.is_nullable !== (newCol.isNullable ? 'YES' : 'NO')
-      );
-    });
-    
-    // 3. Execute changes
-    for (const col of columnsToAdd) {
-      await sequelize.query(
-        `ALTER TABLE "${tableName}" ADD COLUMN "${col.name}" ${col.type} ${col.isNullable ? '' : 'NOT NULL'}`,
-        { transaction }
-      );
-    }
-    
-    // Commit transaction
-    await transaction.commit();
-  } catch (error) {
-    await transaction.rollback();
-    throw error;
-  }
+      for (const field of schema) {
+        if (!currentSchema[field.name]) {
+          await queryInterface.addColumn(tableName, field.name, {
+            type: mapDataType(field.type),
+            allowNull: field.isNullable ?? true,
+            unique: field.isUnique ?? false,
+            primaryKey: field.PrimaryKey ?? false,
+            defaultValue: field.defaultValue || undefined,
+          });
+        } else {
+          await queryInterface.changeColumn(tableName, field.name, {
+            type: mapDataType(field.type),
+            allowNull: field.isNullable ?? true,
+            unique: field.isUnique ?? false,
+            defaultValue: field.defaultValue || undefined,
+          });
+        }
+      }
+      if (!Array.isArray(schema)) {
+  throw new Error("schema is not an array");
 }
+
+      await this.tableModel.update(
+        { schema },
+        { where: { dbName, tableName } }
+      );
+
+      return {
+        message: `Schema for table '${tableName}' updated successfully`,
+      };
+    } catch (error) {
+      throw new Error(`Failed to update table schema: ${error.message}`);
+    }
+  }
+
+  // public async updateTableSchema(
+  //   sequelize: Sequelize,
+  //   tableName: string,
+  //   newColumns: IColumn[],
+  //   existingColumns: any[]
+  // ): Promise<void> {
+  //   const transaction = await sequelize.transaction();
+    
+  //   try {
+  //     // 1. Handle new columns
+  //     const columnsToAdd = newColumns.filter(newCol => 
+  //       !existingColumns.some(existing => existing.column_name === newCol.name)
+  //     );
+      
+  //     // 2. Handle modified columns
+  //     const columnsToModify = newColumns.filter(newCol => {
+  //       const existing = existingColumns.find(e => e.column_name === newCol.name);
+  //       return existing && (
+  //         this.shouldModifyColumnType(existing.data_type, newCol.type) ||
+  //         existing.is_nullable !== (newCol.isNullable ? 'YES' : 'NO')
+  //       );
+  //     });
+      
+  //     // 3. Execute changes
+  //     for (const col of columnsToAdd) {
+  //       await sequelize.query(
+  //         `ALTER TABLE "${tableName}" ADD COLUMN "${col.name}" ${col.type} ${col.isNullable ? '' : 'NOT NULL'}`,
+  //         { transaction }
+  //       );
+  //     }
+      
+  //     // Commit transaction
+  //     await transaction.commit();
+  //   } catch (error) {
+  //     await transaction.rollback();
+  //     throw error;
+  //   }
+  // }
 
   public async deleteTable(dbId: string, tableName: string, orgId: string, dbName: string): Promise<ITableResponse | ITableError> {
     let dbPool: Pool | null = null;
