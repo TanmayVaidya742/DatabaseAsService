@@ -1,14 +1,15 @@
-
+// controllers/table.controller.ts
 import { IColumn, ITableResponse } from '../interfaces/table.interface';
 import { Request, Response, NextFunction } from 'express';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { TableService } from '@/services/table.service';
+import { mainPool } from '@/utils/pool.utils';
 
 export class TableController {
   private tableService = new TableService();
 
   public getAllTables = async (req: RequestWithUser, res: Response, next: NextFunction) => {
-    const { dbId } = req.params;
+    const { dbId} = req.params;
     const { orgId } = req.user;
     
     try {
@@ -21,7 +22,9 @@ export class TableController {
         details: 'Failed to get tables',
       });
     }
-  }
+  }                                                                                                                   
+
+
 
   public createTable = async (req: RequestWithUser, res: Response, next: NextFunction) => {
     const { tableName, columns, dbId } = req.body;
@@ -43,7 +46,7 @@ export class TableController {
         tableName, 
         userId, 
         columns,
-        req.file
+        req.file // Pass the uploaded file if exists
       );
       res.status(201).json(result);
     } catch (error) {
@@ -119,4 +122,51 @@ export class TableController {
       });
     }
   };
+
+
+  public viewTableData = async (req: RequestWithUser, res: Response, next: NextFunction) => {
+    const dbName = req.query.dbName.toString();
+    const userId = req.user.userId;
+    const tableName = req.query.tableName.toString();
+
+
+    try {
+      const result = await this.tableService.viewTableData( dbName, tableName, userId, mainPool );
+      
+      if (result && 'error' in result) {
+        return res.status(400).json(result);
+      }
+
+      res.json(result);
+    } catch (error) {
+      console.error('Error retrieving table data:', error);
+      res.status(500).json({
+        error: 'Internal server error',
+        details: 'Failed to view table data',
+      });
+    }
+  }
+
+  public viewTableColumns = async (req: RequestWithUser, res: Response, next: NextFunction) => {
+    const dbName = req.query.dbName.toString();
+    const userId = req.user.userId;
+    // const mainPool = (req as any).mainPool;
+    const tableName = req.query.tableName.toString();
+
+    try {
+      const result = await this.tableService.viewTableColumns( dbName, tableName, userId, mainPool );
+      
+      if (result && 'error' in result) {
+        return res.status(400).json(result);
+      }
+
+      res.json(result);
+    } catch (error) {
+      console.error('Error retrieving table columns:', error);
+      res.status(500).json({
+        error: 'Internal server error',
+        details: 'Failed to view table columns',
+      });
+    }
+  }
 }

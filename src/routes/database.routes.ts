@@ -7,7 +7,7 @@ import authMiddleware from '@/middlewares/auth.middleware';
 
 const uploadsDir = path.join(__dirname, '../../Uploads');
 if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(UploadsDir, { recursive: true });
+  fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
 const storage = multer.diskStorage({

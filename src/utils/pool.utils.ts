@@ -11,7 +11,7 @@ export const mainPool = new Pool({
 });
 
 // Cache for database-specific pools
-const databasePools: Record<string, Pool> = {};
+const databasePools: Record<string, Pool> = {}; 
 
 export function getPoolForDatabase(dbName: string): Pool {
   if (!databasePools[dbName]) {

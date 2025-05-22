@@ -8,7 +8,7 @@ import { Routes } from '@/interfaces/routes.interface';
 
 const uploadsDir = path.join(__dirname, '../../Uploads');
 if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(UploadsDir, { recursive: true });
+  fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
 const storage = multer.diskStorage({
@@ -57,29 +57,16 @@ class TableRoute implements Routes {
       this.tableController.createTable
     );
 
-    this.router.get(
-      `${this.path}/:dbId/tables`,
-      authMiddleware,
-      this.tableController.getAllTables
-    );
+  this.router.get(`${this.path}/:dbId/tables`,authMiddleware,this.tableController.getAllTables);
+  this.router.get(`${this.path}/:dbId/view-table-data`,authMiddleware,this.tableController.viewTableData);
+  this.router.get(`${this.path}/:dbId/view-table-column`,authMiddleware,this.tableController.viewTableColumns);
 
-    this.router.get(
-      `${this.path}/:dbName/:tableName/schema`,
-      authMiddleware,
-      this.tableController.getTableSchema
-    );
+  this.router.get(`${this.path}/:dbName/:tableName/schema`,authMiddleware, this.tableController.getTableSchema);
 
-    this.router.put(
-      `${this.path}/:dbName/:tableName/schema`,
-      authMiddleware,
-      this.tableController.updateTableSchema
-    );
+  this.router.put(`${this.path}/:dbName/:tableName/schema`,authMiddleware, this.tableController.updateTableSchema);
 
-    this.router.delete(
-      `${this.path}/:dbId/tables/:tableName`,
-      authMiddleware,
-      this.tableController.deleteTable
-    );
+  this.router.delete(`${this.path}/:dbId/tables/:tableName`, authMiddleware, this.tableController.deleteTable);
+
   }
 }
 

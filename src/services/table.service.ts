@@ -5,9 +5,12 @@ import csv from 'csv-parser';
 import { DB_HOST, DB_PASSWORD, DB_PORT, DB_USER } from '@/config';
 import { createSequelizeInstance, DB } from '@/databases';
 import { DataTypes } from 'sequelize';
+import { error } from 'console';
+import csvParser from 'csv-parser';
 
 export class TableService {
   private tableModel = DB.TableModel;
+  private databaseCollectionModel = DB.DatabaseCollectionModel;
 
   private async getTempPool(database: string): Promise<Pool> {
     return new Pool({
@@ -29,6 +32,10 @@ export class TableService {
     csvFile?: Express.Multer.File,
   ): Promise<ITable> {
     try {
+
+      if (csvFile) {
+      return await this.createTableFromCSV(orgId, dbId, dbName, tableName, userId, csvFile);
+      }
       const mapDataType = type => {
         const map = {
           STRING: DataTypes.STRING,
@@ -78,6 +85,100 @@ export class TableService {
       throw error;
     }
   }
+
+  public async createTableFromCSV(
+  orgId: string,
+  dbId: string,
+  dbName: string,
+  tableName: string,
+  userId: string,
+  csvFile: Express.Multer.File,
+): Promise<ITable> {
+  try {
+    const sequelize = await createSequelizeInstance(dbName);
+    const schemaStructure = {};
+    const headers: string[] = [];
+
+    // Step 1: Extract headers
+    await new Promise<void>((resolve, reject) => {
+      fs.createReadStream(csvFile.path)
+        .pipe(csvParser())
+        .on('headers', (parsedHeaders) => {
+          parsedHeaders.forEach(header => {
+            const cleanHeader = header.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
+            headers.push(cleanHeader);
+            schemaStructure[cleanHeader] = {
+              type: DataTypes.TEXT,
+              allowNull: true,
+            };
+          });
+          resolve();
+        })
+        .on('error', reject);
+    });
+
+    // Step 2: Define Sequelize model
+    const DynamicModel = sequelize.define(tableName, schemaStructure, {
+      freezeTableName: true,
+    });
+
+    await sequelize.authenticate();
+    await DynamicModel.sync({ force: false });
+
+    // Step 3: Insert CSV rows into the table
+    await new Promise<void>((resolve, reject) => {
+      const rowsToInsert: Record<string, any>[] = [];
+
+      fs.createReadStream(csvFile.path)
+        .pipe(csvParser())
+        .on('data', (row) => {
+          const cleanedRow = {};
+          headers.forEach(originalHeader => {
+            const rawValue = row[originalHeader];
+            const key = originalHeader.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
+            cleanedRow[key] = rawValue;
+          });
+          rowsToInsert.push(cleanedRow);
+        })
+        .on('end', async () => {
+          if (rowsToInsert.length > 0) {
+            await DynamicModel.bulkCreate(rowsToInsert);
+          }
+          resolve();
+        })
+        .on('error', reject);
+    });
+
+    // Step 4: Save schema metadata
+    const schemaMeta = headers.map(header => ({
+      name: header,
+      type: 'TEXT',
+      isNullable: true,
+      isUnique: false,
+      isPrimary: false,
+    }));
+
+    const tablePayload = {
+      orgId,
+      dbId,
+      dbName,
+      tableName,
+      userId,
+      schema: schemaMeta,
+    };
+
+    const tableMeta = await this.tableModel.create(tablePayload);
+
+    fs.unlinkSync(csvFile.path); // Clean up the uploaded CSV file
+
+    return tableMeta;
+
+  } catch (err) {
+    throw err;
+  }
+}
+
+  
 
   public async getTables(dbId: string, orgId: string): Promise<Array<ITable>> {
     const tableData = await this.tableModel.findAll({ where: { dbId, orgId }, raw: true });
@@ -203,4 +304,112 @@ export class TableService {
       }
     }
   }
+  public async viewTableData(dbName: string, tableName: string, userId: string, mainPool: Pool): Promise<any> {
+    let dbPool = null;
+    let client = null;
+
+    try {
+      const dbResult = await this.databaseCollectionModel.findOne({
+      where: {
+        dbName: dbName,
+        userId: userId,
+      },
+      raw: true,
+    })
+
+    if (dbResult.dbId = null) {
+      throw new Error('Database not found or access denied');
+    }
+
+
+    dbPool = new Pool({
+      user: process.env.DB_USER || 'postgres',
+      host: process.env.DB_HOST || 'localhost',
+      database: dbName,
+      password: process.env.DB_PASSWORD || 'postgres',
+      port: parseInt(process.env.DB_PORT || '5432', 10),
+    });
+
+    const isValidTableName = /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(tableName);
+    if (!isValidTableName) {
+      throw new Error('Invalid table name');
+    }
+
+    const dataResult = await dbPool.query(`SELECT * FROM ${tableName}`);
+    return dataResult.rows;
+
+    }
+    catch(error){
+      throw error;
+    } 
+    finally {
+      if (dbPool) await dbPool.end().catch(console.error);
+      if (client) client.release();
+    }
+  }
+
+  public async viewTableColumns(dbName: string, tableName: string, userId: string, mainPool: Pool): Promise<any> {
+    let dbPool = null;
+    let client = null;
+
+    try {
+    // Verify user access
+    // client = await mainPool.connect();
+    // const dbResult = await client.query(
+    //   'SELECT dbId FROM databases_collection WHERE dbName = $1 AND userId = $2',
+    //   [dbName, userId]
+    // );
+
+    const dbResult = await this.databaseCollectionModel.findOne({
+      where: {
+        dbName: dbName,
+        userId: userId,
+      },
+      raw: true,
+    })
+
+    if (dbResult.dbId = null) {
+      throw new Error('Database not found or access denied');
+    }
+
+    // Connect to specific DB
+    dbPool = new Pool({
+      user: process.env.DB_USER || 'postgres',
+      host: process.env.DB_HOST || 'localhost',
+      database: dbName,
+      password: process.env.DB_PASSWORD || 'postgres',
+      port: parseInt(process.env.DB_PORT || '5432', 10),
+    });
+
+    // 🛡️ Validate table name
+    const isValidTableName = /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(tableName);
+    if (!isValidTableName) {
+      throw new Error('Invalid table name');
+    }
+
+    // Fetch column metadata
+    const columnsResult = await dbPool.query(
+      `
+      SELECT 
+        column_name, 
+        data_type, 
+        is_nullable,
+        column_default
+      FROM 
+        information_schema.columns 
+      WHERE 
+        table_name = $1
+      ORDER BY 
+        ordinal_position
+      `,
+      [tableName]
+    );
+
+    return columnsResult.rows;
+  } finally {
+    if (dbPool) await dbPool.end().catch(console.error);
+    if (client) client.release();
+  }
+  }
+
 }
