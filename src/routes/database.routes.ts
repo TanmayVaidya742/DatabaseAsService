@@ -40,6 +40,7 @@ export class DatabaseRoutes {
     this.router.post(`${this.path}/`, authMiddleware, this.controller.createDatabase);
     this.router.get(`${this.path}/get-by-dbid`, authMiddleware, this.controller.getDatabasesByDbId);
     this.router.get(`${this.path}/`, authMiddleware, this.controller.getDatabases);
+    this.router.get(`${this.path}/table-count`, authMiddleware, this.controller.getTableCount);
     this.router.delete(`${this.path}/:dbName`, authMiddleware, this.controller.deleteDatabase);
 
     // Table operations

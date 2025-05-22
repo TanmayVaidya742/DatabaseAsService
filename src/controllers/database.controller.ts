@@ -55,6 +55,24 @@ export class DatabaseController {
     }
   };
 
+  public getTableCount = async (req: RequestWithUser, res: Response, next: NextFunction) => {
+    try {
+      const dbName = req.query.dbName.toString();
+      const tableCount = await this.databaseService.getTableCount(dbName);
+      
+      res.status(200).json({
+        success: true,
+        data: { dbName, tableCount }
+      });
+    } catch (error) {
+      console.error('Error in getTableCount:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to fetch table count'
+      });
+    }
+  };
+
   public createTable = async (req: Request, res: Response, next: NextFunction) => {
     const { dbName } = req.params;
     const { tableName, columns } = req.body;
