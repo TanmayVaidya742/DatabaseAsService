@@ -1,4 +1,3 @@
-
 import { Pool } from 'pg';
 import { ITable, IColumn, ITableResponse, ITableError } from '../interfaces/table.interface';
 import fs from 'fs';
@@ -9,6 +8,16 @@ import { DataTypes } from 'sequelize';
 
 export class TableService {
   private tableModel = DB.TableModel;
+
+  private async getTempPool(database: string): Promise<Pool> {
+    return new Pool({
+      user: DB_USER,
+      host: DB_HOST,
+      database,
+      password: DB_PASSWORD,
+      port: Number(DB_PORT),
+    });
+  }
 
   public async createTable(
     orgId: string,
@@ -158,8 +167,10 @@ export class TableService {
     }
   }
 
-  public async deleteTable(dbId: string, tableName: string, orgId: string): Promise<ITableResponse | ITableError> {
+  public async deleteTable(dbId: string, tableName: string, orgId: string, dbName: string): Promise<ITableResponse | ITableError> {
+    let dbPool: Pool | null = null;
     try {
+      // Find the table metadata
       const table = await this.tableModel.findOne({
         where: { dbId, tableName, orgId },
       });
@@ -171,15 +182,25 @@ export class TableService {
         };
       }
 
-      const sequelize = await createSequelizeInstance(table.dbName);
-      await sequelize.getQueryInterface().dropTable(tableName);
+      // Create a connection to the specific database
+      dbPool = await this.getTempPool(dbName);
+
+      // Drop the table from the PostgreSQL database
+      await dbPool.query(`DROP TABLE IF EXISTS "${tableName}" CASCADE`);
+
+      // Delete the table metadata from TableModel
       await table.destroy();
 
       return {
         message: `Table '${tableName}' deleted successfully`,
       };
     } catch (error) {
-      throw new Error(`Failed to delete table: ${error.message}`);
+      console.error(`Error deleting table '${tableName}':`, error);
+      throw new Error(`: ${error.message}`);
+    } finally {
+      if (dbPool) {
+        await dbPool.end();
+      }
     }
   }
 }

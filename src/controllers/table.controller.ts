@@ -98,10 +98,11 @@ export class TableController {
 
   public deleteTable = async (req: RequestWithUser, res: Response, next: NextFunction) => {
     const { dbId, tableName } = req.params;
+    const dbName = req.query.dbName.toString();
     const { orgId } = req.user;
 
     try {
-      const result = await this.tableService.deleteTable(dbId, tableName, orgId);
+      const result = await this.tableService.deleteTable(dbId, tableName, orgId, dbName);
       
       if (result && 'error' in result) {
         return res.status(404).json(result);

@@ -1,4 +1,3 @@
-
 import express, { Router } from 'express';
 import multer from 'multer';
 import { TableController } from '../controllers/table.controller';
