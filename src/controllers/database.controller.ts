@@ -14,7 +14,8 @@ export class DatabaseController {
 
   public createDatabase = async (req: RequestWithUser, res: Response, next: NextFunction) => {
     const { databaseName } = req.body;
-    const { userId, orgId } = req.user;
+    const {  orgId } = req.user;
+    const userId = req.user.userId ? req.user.userId : req.user.id;
 
     try {
       if (!databaseName) {
@@ -37,7 +38,7 @@ export class DatabaseController {
 
   public getDatabases = async (req: RequestWithUser, res: Response, next: NextFunction) => {
     try {
-      const userId = req.user.userId;
+      const userId = req.user.userId ? req.user.userId : req.user.id;
       const orgId = req.user.orgId;
       const result = await this.databaseService.getDatabases(userId, orgId);
       

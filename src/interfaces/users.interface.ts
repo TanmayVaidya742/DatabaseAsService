@@ -1,4 +1,5 @@
 export interface IUser {
+  id?:string;
   userId?: string;
   orgId: string;
   unitId?: string;
@@ -10,5 +11,7 @@ export interface IUser {
   updatedAt?: Date;
   password?:string;
   userType?:string;
-
+  secondaryERPId: string;
+  registryId: string;
+  isPyramidDocument: boolean;
 }

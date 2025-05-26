@@ -1,9 +1,11 @@
 
 import { DB_DATABASE, DB_HOST, DB_PASSWORD, DB_PORT, DB_USER, NODE_ENV } from '@/config';
+import consumerUnitDataModel, { ConsumerUnitDataModel } from '@/models/consumerUnit.model';
 import databaseCollectionModel from '@/models/databaseCollection.model';
 import organizationModel from '@/models/organization.model';
 import tableModel from '@/models/table.model';
 import usersModel from '@/models/users.model';
+import walletModel, { Walletmodel } from '@/models/wallet.model';
 import { Sequelize } from 'sequelize';
 
 export async function createSequelizeInstance(dbname: string) {
@@ -63,6 +65,8 @@ export const DB = {
   UserModel: usersModel(sequelize),
   DatabaseCollectionModel: databaseCollectionModel(sequelize),
   TableModel: tableModel(sequelize),
+  Walletmodel: walletModel(sequelize),
+  ConsumerUnitDataModel: consumerUnitDataModel(sequelize),
   sequelize,
   Sequelize,
 };

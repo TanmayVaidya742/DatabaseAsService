@@ -7,6 +7,10 @@ export class OrganizationModel extends Model<IOrganization> implements IOrganiza
     public domain: string;
     public registryId: string;
     public secondaryERPId: string;
+    public appId: string;
+    public mobileNo: string;
+    public billingUnitId: string;
+    public isPyramidDocument: boolean;
     public createdAt: Date;
     public updatedAt: Date;
 }
@@ -38,6 +42,27 @@ export default function (sequelize: Sequelize): typeof OrganizationModel {
                 type: DataTypes.UUID,
                 defaultValue: DataTypes.UUIDV4,
                 field: "secondaryERPId",
+            },
+            appId: {
+                type: DataTypes.STRING,
+                allowNull: true,
+                field: "appId",
+            },
+            mobileNo: {
+                type: DataTypes.STRING,
+                allowNull: true,
+                field: "mobileNo",
+            },
+            billingUnitId: {
+                type: DataTypes.STRING,
+                allowNull: true,
+                field: "billingUnitId",
+            },
+            isPyramidDocument: {
+                type: DataTypes.BOOLEAN,
+                allowNull: true,
+                defaultValue: false,
+                field: "isPyramidDocument",
             },
             createdAt: {
                 type: DataTypes.DATE,

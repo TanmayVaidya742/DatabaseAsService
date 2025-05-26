@@ -2,9 +2,6 @@ import { IUser } from '@/interfaces/users.interface';
 import { DataTypes, Model, Optional, Sequelize } from 'sequelize';
 
 export class UserModel extends Model<IUser> implements IUser {
-  static findById(userId: string) {
-    throw new Error('Method not implemented.');
-  }
   public userId: string;
   public orgId: string;
   public unitId?: string;
@@ -14,6 +11,9 @@ export class UserModel extends Model<IUser> implements IUser {
   public email: string;
   public password: string;
   public userType: string;
+  public secondaryERPId: string;
+  public registryId: string;
+  public isPyramidDocument: boolean;
   public createdAt: Date;
   public updatedAt: Date;
 }
@@ -34,7 +34,6 @@ export default function (sequelize: Sequelize): typeof UserModel {
         references:{
           model:"organizations", key:"orgId"
         }
-
       },
       unitId: {
         type: DataTypes.UUID,
@@ -44,53 +43,60 @@ export default function (sequelize: Sequelize): typeof UserModel {
       firstName: {
         type: DataTypes.STRING,
         field:"firstName",
-        allowNull:false
+        allowNull:true
 
       },
       lastName: {
         type: DataTypes.STRING,
         field:"lastName",
-        allowNull: false
+        allowNull: true
 
       },
       status: {
         type: DataTypes.STRING,
         field:"status",
-        allowNull:false
-
-
+        allowNull:true
       },
       password: {
         type: DataTypes.STRING,
         field:"password",
-        allowNull:false
-
-
+        allowNull:true
       },
       userType: {
         type: DataTypes.STRING,
         field:"userType",
-        allowNull:false
-
-
+        allowNull:true
       },
       email: {
         type: DataTypes.STRING,
         field:"email",
-        allowNull:false
-
+        allowNull:true
+      },
+      secondaryERPId: {
+        type: DataTypes.STRING,
+        field:"secondaryERPId",
+        allowNull:true
+      },
+      registryId: {
+        type: DataTypes.STRING,
+        field:"registryId",
+        allowNull:true
+      },
+      isPyramidDocument: {
+        type: DataTypes.BOOLEAN,
+        field:"isPyramidDocument",
+        allowNull:true,
+        defaultValue: true
       },
       createdAt: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,
         field:"createdAt",
-
       },
         updatedAt: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,
         field:"updatedAt",
-
       },
 
     },

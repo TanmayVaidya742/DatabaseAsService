@@ -4,6 +4,10 @@ export interface IOrganization {
   domain: string;
   registryId: string;
   secondaryERPId: string;
+  appId: string;
+  mobileNo: string;
+  billingUnitId: string;
+  isPyramidDocument: boolean;
   createdAt: Date;
   updatedAt:Date;
 }
