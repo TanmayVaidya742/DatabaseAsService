@@ -20,6 +20,7 @@ class OrgsRoute implements Routes {
         this.router.delete(`${this.path}/delete-org`, this.orgController.deleteOrganization);
         this.router.get(`${this.path}`, this.orgController.getOrganizations);
         this.router.get(`${this.path}/:orgName`, this.orgController.getOrganizationByName);
+        this.router.get(`${this.path}/get-org-details-by-id`, this.orgController.getOrganizationById);
     }
 }
 

@@ -29,7 +29,8 @@ export class TableController {
   public createTable = async (req: RequestWithUser, res: Response, next: NextFunction) => {
     const { tableName, columns, dbId } = req.body;
     const { dbName } = req.params;
-    const { orgId, userId } = req.user;
+    const { orgId } = req.user;
+    const userId = req.user.userId ? req.user.userId : req.user.id;
 
     if (!dbName || !tableName || !columns) {
       return res.status(400).json({
@@ -62,7 +63,9 @@ export class TableController {
     const { dbName, tableName } = req.params;
     const dbId = req.query.dbId.toString();
     const { columns } = req.body;
-    const { orgId, userId } = req.user;
+    const { orgId } = req.user;
+    const userId = req.user.userId ? req.user.userId : req.user.id;
+
 
     if (!dbName || !tableName || !columns || !dbId) {
       return res.status(400).json({
@@ -162,7 +165,7 @@ export class TableController {
 
   public viewTableData = async (req: RequestWithUser, res: Response, next: NextFunction) => {
     const dbName = req.query.dbName.toString();
-    const userId = req.user.userId;
+    const userId = req.user.userId ? req.user.userId : req.user.id;
     const tableName = req.query.tableName.toString();
 
 
@@ -185,7 +188,7 @@ export class TableController {
 
   public viewTableColumns = async (req: RequestWithUser, res: Response, next: NextFunction) => {
     const dbName = req.query.dbName.toString();
-    const userId = req.user.userId;
+    const userId = req.user.userId ? req.user.userId : req.user.id;
     // const mainPool = (req as any).mainPool;
     const tableName = req.query.tableName.toString();
 
@@ -255,7 +258,8 @@ export class TableController {
   public createTableFromCSV = async (req: RequestWithUser, res: Response, next: NextFunction) => {
   const { dbName } = req.params;
   const { tableName } = req.body;
-  const { orgId, userId } = req.user;
+  const { orgId } = req.user;
+  const userId = req.user.userId ? req.user.userId : req.user.id;
   const csvFile = req.file;
 
   if (!dbName || !tableName || !csvFile) {

@@ -6,29 +6,33 @@ import { ODataService } from '@/services/oDataquery.service';
 export class ODataController {
   private odataService = new ODataService();
 
-  public getData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const { dbName, tableName } = req.params;
-      const { $filter, $select, $orderby, $top, $skip, $count } = req.query;
+ public getData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { dbName, tableName } = req.params;
+    const { $filter, $select, $orderby, $top, $skip, $count, $join } = req.query;
 
-      const result = await this.odataService.getData(dbName, tableName, {
-        filter: $filter as string,
-        select: $select as string,
-        orderby: $orderby as string,
-        top: $top as string,
-        skip: $skip as string,
-        count: $count as string
-      });
+    console.log('OData Controller - Query.join:', $join);
+    console.log('OData Controller - All query params:', req.query);
 
-      res.status(200).json({
-        '@odata.context': `$metadata#${tableName}`,
-        value: result.value,
-        ...(result.count !== undefined && { '@odata.count': result.count })
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+    const result = await this.odataService.getData(dbName, tableName, {
+      filter: $filter as string,
+      select: $select as string,
+      orderby: $orderby as string,
+      top: $top as string,
+      skip: $skip as string,
+      count: $count as string,
+      join: $join as string
+    });
+
+    res.status(200).json({
+      '@odata.context': `$metadata#${tableName}`,
+      value: result.value,
+      ...(result.count !== undefined && { '@odata.count': result.count })
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
   public insertData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {

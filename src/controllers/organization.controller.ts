@@ -50,4 +50,18 @@ export default class OrganizationController {
             next(error);
         }
     };
+
+    public getOrganizationById = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const orgId = req.query.orgId.toString();
+            const organization = await this.orgService.findOrganizationById(orgId);
+            if (organization) {
+                res.status(200).json({ data: organization, message: 'Organization retrieved successfully' });
+            } else {
+                res.status(404).json({ message: 'Organization not found' });
+            }
+        } catch (error) {
+            next(error);
+        }
+    };
 }

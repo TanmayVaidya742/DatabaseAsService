@@ -54,6 +54,11 @@ export class TableService {
       const schema = JSON.parse(columns);
 
       const schemaStructure = {};
+      const foreignKeyConstraints: Array<{
+        columnName: string;
+        referencedTable: string;
+        referencedColumn: string;
+      }> = [];
       for (const field of schema) {
         schemaStructure[field.name] = {
           type: mapDataType(field.type),
@@ -62,13 +67,37 @@ export class TableService {
           primaryKey: field.isPrimary ?? false,
           defaultValue: field.defaultValue || undefined,
         };
+        if (field.isForeignKey && field.foreignKeyTable && field.foreignKeyColumn) {
+          foreignKeyConstraints.push({
+            columnName: field.name,
+            referencedTable: field.foreignKeyTable,
+            referencedColumn: field.foreignKeyColumn
+          });
+        }
       }
+      // for (const field of schema) {
+      //   schemaStructure[field.name] = {
+      //     type: mapDataType(field.type),
+      //     allowNull: field.isNullable ?? true,
+      //     unique: field.isUnique ?? false,
+      //     primaryKey: field.isPrimary ?? false,
+      //     defaultValue: field.defaultValue || undefined,
+      //   };
+      // }
 
       const DynamicModel = sequelize.define(tableName, schemaStructure, {
         freezeTableName: true,
       });
       await sequelize.authenticate();
       await DynamicModel.sync({ force: false });
+       for (const constraint of foreignKeyConstraints) {
+      await sequelize.query(`
+        ALTER TABLE "${tableName}"
+        ADD CONSTRAINT "fk_${tableName}_${constraint.columnName}"
+        FOREIGN KEY ("${constraint.columnName}")
+        REFERENCES "${constraint.referencedTable}" ("${constraint.referencedColumn}")
+      `);
+      }
       console.log(`Table '${tableName}' created successfully in DB '${dbName}'`);
 
       let tablePayload = {
@@ -721,7 +750,10 @@ export class TableService {
       isUnique: col.isUnique || false,
       PrimaryKey: col.PrimaryKey || col.isPrimary || false, // Handle both property names
       defaultValue: col.defaultValue || col.columnDefault || undefined,
-      columnDefault: col.columnDefault || col.defaultValue || null
+      columnDefault: col.columnDefault || col.defaultValue || null,
+      isForeignKey: false,
+      foreignKeyTable: '',
+      foreignKeyColumn: ''
     }));
   }
   

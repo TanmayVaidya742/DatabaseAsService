@@ -21,7 +21,8 @@ class AppConfiguration implements Routes {
         this.router.post(`${this.path}/app-linked-to-organization`, this.appConfigurationController.addOrganizationPyramid);
         this.router.post(`${this.path}/consumer-unit-created`, this.appConfigurationController.consumerUnitLinkToApp);
         this.router.get(`${this.path}/authenticate`,authMiddleware, this.appConfigurationController.authenticate);
-
+        this.router.get(`${this.path}/get-linked-apps-by-user-id`, this.appConfigurationController.getLinkedAppsByUserId);
+        this.router.post(`${this.path}/logout`, this.appConfigurationController.logOut);
     }
 }
 

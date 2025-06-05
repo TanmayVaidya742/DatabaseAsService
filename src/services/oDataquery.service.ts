@@ -1,4 +1,3 @@
-// services/oData.service.ts
 import { Pool } from 'pg';
 
 interface QueryResult {
@@ -42,15 +41,26 @@ export class ODataService {
       top?: string;
       skip?: string;
       count?: string;
+      join?: string;
     }
   ): Promise<GetDataResult> {
     const pool = this.getDbPool(dbName);
-    const { filter, select, orderby, top, skip, count } = options;
+    const { filter, select, orderby, top, skip, count, join } = options;
+
+    // Parse join clauses if provided
+    const joinClauses = join ? this.parseJoinClause(join) : [];
 
     // Build SELECT clause
     const selectClause = select
-      ? select.split(',').map(col => `"${col.trim()}"`).join(', ')
-      : '*';
+      ? select.split(',').map(col => {
+        // Handle joined table columns (format: "joinAlias/columnName")
+        if (col.includes('/')) {
+          const [alias, column] = col.split('/');
+          return `"${alias}"."${column.trim()}" AS "${alias}_${column.trim()}"`;
+        }
+        return `"${tableName}"."${col.trim()}"`;
+      }).join(', ')
+      : `"${tableName}".*${joinClauses.length > 0 ? `, ${joinClauses.map(j => `${j.alias}.*`).join(', ')}` : ''}`;
 
     // Build WHERE clause
     let whereClause = '';
@@ -59,6 +69,13 @@ export class ODataService {
       whereClause = this.parseFilter(filter, params);
     }
 
+    // Build JOIN clauses
+    let joinClause = '';
+    if (joinClauses.length > 0) {
+      joinClause = ' ' + joinClauses.map(j =>
+        `${j.joinType} JOIN "${j.foreignTable}" AS "${j.alias}" ON "${tableName}"."${j.localColumn}" = "${j.alias}"."${j.foreignColumn}"`
+      ).join(' ');
+    }
     // Build ORDER BY clause
     let orderByClause = '';
     if (orderby) {
@@ -75,13 +92,14 @@ export class ODataService {
     }
 
     // Main query
-    const query = `SELECT ${selectClause} FROM "${tableName}"${whereClause}${orderByClause}${limitOffsetClause}`;
+    const query = `SELECT ${selectClause} FROM "${tableName}"${joinClause}${whereClause}${orderByClause}${limitOffsetClause}`;
+    console.log('Executing query:', query); // Debug logging
     const result = await pool.query(query, params);
 
     // Count query if requested
     let rowCount = null;
     if (count === 'true') {
-      const countQuery = `SELECT COUNT(*) FROM "${tableName}"${whereClause}`;
+      const countQuery = `SELECT COUNT(*) FROM "${tableName}"${joinClause}${whereClause}`;
       const countResult = await pool.query(countQuery, params);
       rowCount = parseInt(countResult.rows[0].count);
     }
@@ -92,7 +110,71 @@ export class ODataService {
     };
   }
 
- public async insertData(dbName: string, tableName: string, data: Record<string, any>): Promise<any> {
+  private parseJoinClause(joinString: string): Array<{
+  alias: string;
+  foreignTable: string;
+  localColumn: string;
+  foreignColumn: string;
+  joinType: string;
+}> {
+  try {
+    console.log('Raw joinString:', JSON.stringify(joinString));
+
+    // Assume a single join for now (no comma splitting for multiple joins)
+    const equalsParts = joinString.split('=');
+    if (equalsParts.length !== 2) {
+      throw new Error('Invalid join format. Expected format: alias=foreignTable(localColumn:foreignColumn[,joinType])');
+    }
+
+    const alias = equalsParts[0].trim();
+    const joinDefinition = equalsParts[1].trim();
+    console.log('Join definition:', JSON.stringify(joinDefinition));
+
+    // Extract foreign table and join details
+    const parenMatch = joinDefinition.match(/^([a-zA-Z0-9_-]+)\((.*)\)$/);
+    if (!parenMatch) {
+      throw new Error(`Invalid join table specification: ${joinDefinition}. Expected format: foreignTable(localColumn:foreignColumn[,joinType])`);
+    }
+
+    const foreignTable = parenMatch[1].trim();
+    const joinDetails = parenMatch[2].split(',').map(part => part.trim());
+    console.log('Join details:', joinDetails);
+    if (!joinDetails[0]) {
+      throw new Error(`Missing join columns in: ${joinDefinition}. Expected format: localColumn:foreignColumn[,joinType]`);
+    }
+
+    // Parse column mapping
+    const columnParts = joinDetails[0].split(':');
+    if (columnParts.length !== 2) {
+      throw new Error(`Invalid join column specification: ${joinDetails[0]}. Expected format: localColumn:foreignColumn`);
+    }
+
+    // Handle join type
+    let joinType = joinDetails[1]?.toUpperCase() || 'INNER';
+    if (joinType === 'OUTER') {
+      joinType = 'FULL OUTER';
+    }
+    const validJoinTypes = ['INNER', 'LEFT', 'RIGHT', 'FULL', 'FULL OUTER'];
+    if (!validJoinTypes.includes(joinType)) {
+      throw new Error(`Invalid join type: ${joinType}. Supported types: INNER, LEFT, RIGHT, FULL, OUTER`);
+    }
+
+    return [{
+      alias,
+      foreignTable,
+      localColumn: columnParts[0].trim(),
+      foreignColumn: columnParts[1].trim(),
+      joinType
+    }];
+  } catch (error) {
+    console.error('Error parsing join clause:', error.message);
+    throw new Error(`Invalid join specification: ${error.message}`);
+  }
+}
+
+
+
+  public async insertData(dbName: string, tableName: string, data: Record<string, any>): Promise<any> {
     const pool = this.getDbPool(dbName);
 
     if (!data || typeof data !== 'object' || Object.keys(data).length === 0) {
@@ -114,59 +196,59 @@ export class ODataService {
     const result = await pool.query(query, values);
 
     return result.rows[0];
-}
+  }
 
   // services/oData.service.ts
-public async updateData(
+  public async updateData(
     dbName: string,
     tableName: string,
     filter: string,
     data: Record<string, any>
-): Promise<QueryResult> {
+  ): Promise<QueryResult> {
     const pool = this.getDbPool(dbName);
 
     if (!data || typeof data !== 'object' || Object.keys(data).length === 0) {
-        throw new Error('Invalid or empty data object');
+      throw new Error('Invalid or empty data object');
     }
 
     if (!filter) {
-        throw new Error('Filter parameter is required for updates');
+      throw new Error('Filter parameter is required for updates');
     }
 
     // Add updatedAt timestamp
     const dataWithTimestamp = {
-        ...data,
-        updatedAt: new Date()
+      ...data,
+      updatedAt: new Date()
     };
 
     // Build SET clause with proper parameter numbering
     const setEntries = Object.entries(dataWithTimestamp);
     const setColumns = setEntries.map(([col], i) => `"${col}" = $${i + 1}`);
     const setValues = setEntries.map(([, val]) => val);
-    
+
     // Parse filter to get WHERE clause and filter parameters
     const filterParams: any[] = [];
     const whereClause = this.parseFilter(filter, filterParams);
-    
+
     if (!whereClause) {
-        throw new Error('Invalid filter parameter');
+      throw new Error('Invalid filter parameter');
     }
 
     // Combine parameters (set values first, then filter values)
     const params = [...setValues, ...filterParams];
-    
+
     // Re-number WHERE clause parameters to come after SET parameters
     const whereClauseWithOffset = whereClause.replace(/\$(\d+)/g, (_, p1) => {
-        return `$${Number(p1) + setValues.length}`;
+      return `$${Number(p1) + setValues.length}`;
     });
 
     const query = `UPDATE "${tableName}" SET ${setColumns.join(', ')}${whereClauseWithOffset} RETURNING *`;
-    
+
     console.debug('Update query:', query);
     console.debug('Parameters:', params);
-    
+
     return await pool.query(query, params);
-}
+  }
 
 
 
@@ -184,7 +266,7 @@ public async updateData(
     // Parse filter
     const params: any[] = [];
     const whereClause = this.parseFilter(filter, params);
-    
+
     if (!whereClause) {
       throw new Error('Invalid filter parameter');
     }
@@ -243,19 +325,19 @@ public async updateData(
   private parseFilter(filter: string, params: any[]): string {
     const conditions = filter.split(' and ');
     const whereParts: string[] = [];
-    
+
     for (const condition of conditions) {
       const match = condition.match(/(\w+)\s+(eq|ne|gt|ge|lt|le)\s+(['"].*?['"]|\d+)/i);
       if (!match) continue;
-      
+
       const [_, column, operator, value] = match;
       const sqlOperator = this.mapOperator(operator);
       const paramValue = value.replace(/^['"]|['"]$/g, '');
-      
+
       whereParts.push(`"${column}" ${sqlOperator} $${params.length + 1}`);
       params.push(this.parseValue(paramValue));
     }
-    
+
     return whereParts.length > 0 ? ` WHERE ${whereParts.join(' AND ')}` : '';
   }
 
@@ -265,7 +347,7 @@ public async updateData(
       const dir = direction?.toLowerCase() === 'desc' ? 'DESC' : 'ASC';
       return `"${column}" ${dir}`;
     });
-    
+
     return parts.length > 0 ? ` ORDER BY ${parts.join(', ')}` : '';
   }
 

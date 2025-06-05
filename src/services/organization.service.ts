@@ -83,4 +83,14 @@ export default class OrganizationService {
         });
         return organization;
     }
+
+    public async findOrganizationById(orgId: string): Promise<IOrganization | null> {
+        const organization = await this.orgModel.findOne({
+            where: {
+                orgId: orgId,
+            },
+            raw: true,
+        });
+        return organization;
+    }
 }

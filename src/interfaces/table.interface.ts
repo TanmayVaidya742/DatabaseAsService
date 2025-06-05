@@ -115,6 +115,9 @@ export interface IColumn {
   PrimaryKey: boolean;
   defaultValue?: string;
   columnDefault?: string | null;
+  isForeignKey: boolean,
+  foreignKeyTable: "",
+  foreignKeyColumn: "",
 }
 
 export interface ITableResponse {
